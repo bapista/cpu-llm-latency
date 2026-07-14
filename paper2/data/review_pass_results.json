@@ -1,0 +1,92 @@
+{
+  "n": 8,
+  "model": "qwen2.5:7b",
+  "single_pass_s": {
+    "mean": 11.96,
+    "std": 5.49
+  },
+  "two_pass_s": {
+    "mean": 28.79,
+    "std": 12.84
+  },
+  "two_pass_overhead_x": 2.41,
+  "quality": {
+    "revised_better": 1,
+    "tie": 7,
+    "single_better": 0
+  },
+  "rows": [
+    {
+      "query": "What are the benefits of unit testing?",
+      "single_s": 15.47,
+      "two_pass_s": 39.98,
+      "review_s": 24.51,
+      "verdict": "tie",
+      "v1": "TIE",
+      "v2": "TIE"
+    },
+    {
+      "query": "Explain the difference between REST and GraphQL.",
+      "single_s": 21.17,
+      "two_pass_s": 48.64,
+      "review_s": 27.47,
+      "verdict": "tie",
+      "v1": "TIE",
+      "v2": "TIE"
+    },
+    {
+      "query": "What is photosynthesis?",
+      "single_s": 10.41,
+      "two_pass_s": 26.99,
+      "review_s": 16.57,
+      "verdict": "tie",
+      "v1": "TIE",
+      "v2": "TIE"
+    },
+    {
+      "query": "How does the TCP three-way handshake work?",
+      "single_s": 10.22,
+      "two_pass_s": 23.72,
+      "review_s": 13.5,
+      "verdict": "tie",
+      "v1": "TIE",
+      "v2": "TIE"
+    },
+    {
+      "query": "Summarize the water cycle in a few sentences.",
+      "single_s": 4.98,
+      "two_pass_s": 12.58,
+      "review_s": 7.61,
+      "verdict": "revised",
+      "v1": "B",
+      "v2": "TIE"
+    },
+    {
+      "query": "What is a language model?",
+      "single_s": 5.03,
+      "two_pass_s": 11.63,
+      "review_s": 6.59,
+      "verdict": "tie",
+      "v1": "TIE",
+      "v2": "TIE"
+    },
+    {
+      "query": "Why is indexing important in databases?",
+      "single_s": 13.23,
+      "two_pass_s": 31.5,
+      "review_s": 18.28,
+      "verdict": "tie",
+      "v1": "TIE",
+      "v2": "TIE"
+    },
+    {
+      "query": "Explain the CAP theorem.",
+      "single_s": 15.17,
+      "two_pass_s": 35.25,
+      "review_s": 20.07,
+      "verdict": "tie",
+      "v1": "TIE",
+      "v2": "TIE"
+    }
+  ]
+}

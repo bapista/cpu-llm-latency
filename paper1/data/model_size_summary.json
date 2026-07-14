@@ -1,0 +1,35 @@
+[
+  {
+    "model": "qwen2.5:7b",
+    "params": "7B",
+    "prompt_tok": 1302,
+    "prefill_s_mean": 27.37,
+    "prefill_s_std": 0.2,
+    "prefill_tps_mean": 47.56,
+    "prefill_tps_std": 0.36,
+    "prefill_pct_mean": 92,
+    "prefill_pct_std": 0.1
+  },
+  {
+    "model": "llama3.1:8b",
+    "params": "8B",
+    "prompt_tok": 1281,
+    "prefill_s_mean": 29.43,
+    "prefill_s_std": 0.16,
+    "prefill_tps_mean": 43.53,
+    "prefill_tps_std": 0.23,
+    "prefill_pct_mean": 96,
+    "prefill_pct_std": 0.1
+  },
+  {
+    "model": "gemma2:9b",
+    "params": "9B",
+    "prompt_tok": 1281,
+    "prefill_s_mean": 29.39,
+    "prefill_s_std": 0.57,
+    "prefill_tps_mean": 43.59,
+    "prefill_tps_std": 0.82,
+    "prefill_pct_mean": 95,
+    "prefill_pct_std": 0.2
+  }
+]

@@ -1,0 +1,8 @@
+REPS=5  model=qwen2.5:7b
+tok=   55  prefill=  0.57+/-0.05 s  pct= 38+/-4.2%  pf_tps=96.22+/-8.11  dec=0.95+/-0.1s
+tok=  159  prefill=  2.71+/-0.03 s  pct= 49+/-1.6%  pf_tps=58.72+/-0.59  dec=2.83+/-0.19s
+tok=  367  prefill=  7.22+/-0.09 s  pct= 72+/-0.7%  pf_tps=50.81+/-0.61  dec=2.83+/-0.11s
+tok=  678  prefill= 14.19+/-0.09 s  pct= 82+/-0.1%  pf_tps=47.79+/-0.32  dec=3.2+/-0.02s
+tok= 1299  prefill= 28.47+/-0.12 s  pct= 91+/-0.1%  pf_tps=45.63+/-0.19  dec=2.75+/-0.01s
+tok= 2336  prefill= 53.66+/-0.29 s  pct= 95+/-0.5%  pf_tps=43.53+/-0.23  dec=2.64+/-0.3s
+DONE -> /home/bapista/workspace/research/prefill-latency-paper/data/prefill_reps_summary.json
