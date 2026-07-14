@@ -40,9 +40,8 @@ Two non-obvious findings carry the paper:
    ≥5 reps + error bars, matched queries per lane, warm and cold.
 3. `_classify_lane` pseudocode listing; 2–3 more related-work cites
    (early-exit / adaptive computation, LLM-as-judge cost, speculative decoding).
-4. **Repo URL inserted** (2026-07-14): `github.com/bapista/cpu-llm-latency`
-   (`paper2/`) is now in a new Reproducibility section. ⚠️ Repo not yet created/
-   pushed — create + push before the URL resolves, or before arXiv submission.
+4. ✅ **Repo live** (2026-07-14): https://github.com/bapista/cpu-llm-latency
+   (`paper2/`), public, in the new Reproducibility section. URL resolves (HTTP 200).
 
 ## Build (offline)
 ```

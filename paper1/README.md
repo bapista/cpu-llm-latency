@@ -38,9 +38,8 @@ Ollama 0.19.0). Raw data + harness in `data/`.
    harness `data/model_size_sweep.py`.
    ↳ Still owed: **multi-quant (Q4/Q5/Q8)** sweep with ≥5 reps (preliminary
    Q4-vs-Q5 datapoint from NeuronAI logs: 49 vs 36 tok/s prefill).
-3. **Repo URL inserted** (2026-07-14): `github.com/bapista/cpu-llm-latency`
-   (`paper1/`) is now in the Reproducibility section. ⚠️ Repo not yet created/
-   pushed — create + push before the URL resolves, or before arXiv submission.
+3. ✅ **Repo live** (2026-07-14): https://github.com/bapista/cpu-llm-latency
+   (`paper1/`), public, in the Reproducibility section. URL resolves (HTTP 200).
 
 ## Build (offline)
 ```
