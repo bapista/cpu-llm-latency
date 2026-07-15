@@ -38,8 +38,11 @@ Two non-obvious findings carry the paper:
 2. **Controlled per-lane re-run** (partial): the review-pass lever is now
    controlled, but the full per-lane table (Table 2) is still dev-log. Owed:
    ≥5 reps + error bars, matched queries per lane, warm and cold.
-3. `_classify_lane` pseudocode listing; 2–3 more related-work cites
-   (early-exit / adaptive computation, LLM-as-judge cost, speculative decoding).
+3. ✅ **`_classify_lane` pseudocode** — DONE (2026-07-15). Algorithm 1
+   (`alg:route`) in §3, faithful to `neuronai-ui/backend/main.py` (ClassifyLane
+   + hot-affinity RouteEffort); needs `algorithm`+`algpseudocode` (MacTeX-full).
+   Still owed: 2–3 more related-work cites (early-exit / adaptive computation,
+   LLM-as-judge cost, speculative decoding).
 4. ✅ **Repo live** (2026-07-14): https://github.com/bapista/cpu-llm-latency
    (`paper2/`), public, in the new Reproducibility section. URL resolves (HTTP 200).
 

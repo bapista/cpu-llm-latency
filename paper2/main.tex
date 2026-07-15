@@ -28,6 +28,8 @@
 \usepackage{caption}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \newcommand{\FILL}[1]{\textcolor{red}{[FILL: #1]}}
 \newcommand{\note}[1]{\textcolor{blue}{\small$\blacktriangleright$#1}}
@@ -189,9 +191,49 @@ to Standard.
 \texttt{\_route\_effort} returns \texttt{\{lane, troop, model, flags\}} and
 is called before the CEO prepare step; Reflex short-circuits there. Stage
 gating is consumed by the streaming path to skip review/grounding/refine on
-fast lanes. The router is pure-heuristic and unit-tested. \note{Add a short
-pseudocode listing of \texttt{\_classify\_lane} + the hot-affinity
-arbitration.}
+fast lanes. Algorithm~\ref{alg:route} gives the pure-heuristic classifier and
+the hot-affinity arbitration; both are model-free and unit-tested.
+
+\begin{algorithm}[t]
+\caption{Effort routing: model-free lane classification (\textsc{ClassifyLane})
+and hot-affinity model arbitration (\textsc{RouteEffort}). $G$ is the resident
+7B generalist; $hot$ is the currently loaded model ($\varnothing$ if none).}
+\label{alg:route}
+\small
+\begin{algorithmic}[1]
+\Procedure{ClassifyLane}{$q$}\Comment{no model call}
+  \If{$q$ begins with \texttt{/think} or \texttt{/deep}}
+     \State \Return \textsc{deep}
+  \EndIf
+  \State $w \gets$ number of words in $q$
+  \If{$w \le 10$ \textbf{and} $q$ matches a greeting/ack, identity,
+      or time pattern}
+     \State \Return \textsc{reflex}
+  \EndIf
+  \If{$w > 80$ \textbf{or} $q$ has ${\ge}\,2$ question marks \textbf{or}
+      $q$ matches a hard-signal pattern}
+     \Statex \hfill{\footnotesize(legal, debug, prove, analyse, compare, design, \dots)}
+     \State \Return \textsc{deep}
+  \EndIf
+  \State \Return \textsc{standard}\Comment{ambiguous biases here}
+\EndProcedure
+\Statex
+\Procedure{RouteEffort}{$q$, $hot$}
+  \State $\ell \gets \Call{ClassifyLane}{q}$
+  \If{$\ell = \textsc{reflex}$ \textbf{and} $q$ is not a web task}
+     \State $m \gets hot$ \textbf{if} $hot$ is a non-embedder \textbf{else} $G$
+     \State \Return generalist troop, model $m$, \emph{skip} review/grounding
+  \EndIf
+  \State $prep \gets \Call{CommandPrepare}{q}$\Comment{best-fit specialist troop+model}
+  \If{$\ell \ne \textsc{deep}$ \textbf{and} $hot \ne \varnothing$ \textbf{and}
+      $hot$ is a non-embedder \textbf{and} $prep.\textit{model} \ne hot$}
+     \State $prep.\textit{model} \gets hot$\Comment{avoid a ${\sim}65$\,s reload}
+  \EndIf
+  \State $prep.\textit{review} \gets (\ell = \textsc{deep})$\Comment{review pass: Deep only}
+  \State \Return $prep$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
 
 % =====================================================================
 \section{Evaluation}
