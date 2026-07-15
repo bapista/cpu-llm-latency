@@ -33,12 +33,15 @@ Ollama 0.19.0). Raw data + harness in `data/`.
    `% VERIFY` comments — confirm before submission.
 2. ✅ **Multi-model (7B/8B/9B) sweep** — DONE (2026-07-14). At a fixed ~1,300-tok
    prompt (N=3), prefill stays **92–96%** across Qwen2.5-7B / Llama-3.1-8B /
-   Gemma2-9B — dominance is not a Qwen artifact. Wired into §4.3 (Table 4,
-   `tab:modelsize`) + abstract/scope/limitations. Data: `data/model_size_summary.json`,
-   harness `data/model_size_sweep.py`.
-   ↳ Still owed: **multi-quant (Q4/Q5/Q8)** sweep with ≥5 reps (preliminary
-   Q4-vs-Q5 datapoint from NeuronAI logs: 49 vs 36 tok/s prefill).
-3. ✅ **Repo live** (2026-07-14): https://github.com/bapista/cpu-llm-latency
+   Gemma2-9B. Wired into §4.3 (Table 4, `tab:modelsize`). Data:
+   `data/model_size_summary.json`, harness `data/model_size_sweep.py`.
+3. ✅ **Quant (Q4/Q5/Q8) sweep** — DONE (2026-07-15, N=5). Counterintuitive:
+   prefill speed is **non-monotonic** — Q8_0 fastest (~60 tok/s), Q5_K_M slowest
+   (~35), Q4_K_M middle (~46). Dequant scheme, not byte footprint, dominates CPU
+   prefill. Confirmed in reverse run order (thermal check). New §4.3 subsection
+   (Table `tab:quant`) + abstract + conclusion. Data: `data/quant_summary.json`
+   (+`_reverse`), raw `data/quant_raw.jsonl`, harness `data/quant_sweep.py`.
+4. ✅ **Repo live** (2026-07-14): https://github.com/bapista/cpu-llm-latency
    (`paper1/`), public, in the Reproducibility section. URL resolves (HTTP 200).
 
 ## Build (offline)

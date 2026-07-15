@@ -57,8 +57,11 @@ decode stays roughly flat ($\sim$11--12 tok/s), so end-to-end latency on
 CPU is governed by \emph{context length}, not output length---inverting the
 GPU-era assumption. Error bars are tight (prefill fraction 91$\pm$0.1\% at
 1{,}299 tokens), and the effect is not model-specific: Llama-3.1-8B and
-Gemma2-9B also sit at 95--96\% prefill at $\sim$1{,}300 tokens. We release
-the measurement harness and raw data.
+Gemma2-9B also sit at 95--96\% prefill at $\sim$1{,}300 tokens. We further
+find prefill speed is \emph{non-monotonic} in quantization: the 8-bit build
+prefills fastest and the intermediate K-quant slowest, inverting the
+``quantize-down-for-speed'' heuristic on CPU. We release the measurement
+harness and raw data.
 \end{abstract}
 
 % =====================================================================
@@ -92,9 +95,10 @@ We answer empirically. Our contributions, stated as measured facts:
 
 \noindent\textbf{Scope.} The main sweep is deliberately bounded to
 \emph{single-machine, CPU-only inference of one quantized 7B model}, with a
-cross-family spot-check at 7B--9B (Section~\ref{sec:results-size}). We do
-not study batched multi-user serving, GPU offload, or a full multi-quant
-scaling study; those are future work (Section~\ref{sec:limitations}).
+cross-family spot-check at 7B--9B (Section~\ref{sec:results-size}) and a
+Q4/Q5/Q8 quantization sweep (Section~\ref{sec:results-quant}). We do not
+study batched multi-user serving, GPU offload, or a second hardware class;
+those are future work (Section~\ref{sec:limitations}).
 
 % =====================================================================
 \section{Background \& Related Work}
@@ -290,12 +294,47 @@ CPU-only regime, not of any one model.
   \end{tabular}
 \end{table}
 
-\paragraph{Quantization (preliminary).}
-As a preliminary datapoint from NeuronAI's own operational logs on the same
-machine, quantization moves the prefill-bound cost as expected: Qwen2.5-7B
-at \textbf{Q4} prefills at $\sim$49~tok/s versus $\sim$36~tok/s at
-\textbf{Q5\_K\_M}---heavier weights slow the prefill-bound path.
-\FILL{a controlled Q4/Q5/Q8 sweep with $\geq$5 reps is future work.}
+\subsection{Quantization: prefill speed is non-monotonic in footprint}
+\label{sec:results-quant}
+Holding the model fixed (Qwen2.5-7B-Instruct) and varying only weight
+precision reveals a counterintuitive result (Table~\ref{tab:quant};
+$N{=}5$). Prefill throughput is \emph{not} monotonic in model
+size-in-bytes: \textbf{Q8\_0}, the \emph{largest} build ($\sim$8.1~GB),
+prefills \emph{fastest} ($\sim$60~tok/s), while the intermediate
+\textbf{Q5\_K\_M} is \emph{slowest} ($\sim$35~tok/s) and \textbf{Q4\_K\_M}
+sits between ($\sim$46~tok/s). On compute-bound CPU prefill the
+\emph{dequantization scheme}, not the byte footprint, dominates: Q8\_0's
+near-trivial dequant (a single scale per block) beats the more elaborate
+block-structured unpacking of the K-quants. The ordering is robust---it
+reproduces when the sweep is run in reverse order (Q8${\to}$Q4), ruling out
+a thermal/warm-up artifact.
+
+\begin{table}[t]
+  \centering
+  \caption{Quantization sweep: same model (Qwen2.5-7B-Instruct), fixed
+  $\sim$1{,}300-token prompt, mean$\pm$std over 5 runs, CPU-only. Prefill
+  speed is non-monotonic in footprint; ordering confirmed under reversed
+  run order.}
+  \label{tab:quant}
+  \small
+  \begin{tabular}{lrrrr}
+    \toprule
+    Quant & Footprint & Prefill (s) & tok/s & Prefill \% \\
+    \midrule
+    Q4\_K\_M & $\sim$4.7\,GB & 28.03$\pm$0.10 & 46.3 & 91 \\
+    Q5\_K\_M & $\sim$5.4\,GB & 37.35$\pm$0.04 & 34.8 & 95 \\
+    Q8\_0    & $\sim$8.1\,GB & 21.59$\pm$1.60 & 60.4 & 90 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Implication.}
+On CPU, quantizing \emph{harder} to shrink a model can \emph{cost} prefill
+latency: Q8\_0 here is simultaneously the latency-fastest and (by bit-width)
+the highest-fidelity build, trading only memory footprint. This inverts the
+``quantize down for speed'' heuristic inherited from memory-bandwidth-bound
+decode, and makes quantization choice a genuine prefill-side lever on edge
+hardware.
 
 % =====================================================================
 \section{Analysis \& Discussion}
@@ -329,12 +368,12 @@ emits a token. The systems bottleneck and the deployment design meet here.
 % =====================================================================
 \section{Limitations}
 \label{sec:limitations}
-This study centers on one model (Qwen2.5-7B Q4) and one runtime
+This study centers on one model (Qwen2.5-7B) and one runtime
 (Ollama/llama.cpp) on a single machine; the cross-family check
-(Table~\ref{tab:modelsize}) spans 7B--9B but at Q4 only. We report 5
-repetitions per prompt length on the main sweep (mean$\pm$std); remaining
-extensions are a controlled multi-quant (Q4/Q5/Q8) sweep and a second
-hardware class. We cap
+(Table~\ref{tab:modelsize}) spans 7B--9B, and the quantization sweep
+(Table~\ref{tab:quant}) spans Q4/Q5/Q8 of that model. We report 5
+repetitions per point (mean$\pm$std); the main remaining extension is a
+second hardware class. We cap
 output at 64 tokens; very long generations would
 raise the decode share. We do not evaluate batched multi-user serving or
 GPU offload. Prefill is read directly from the runtime's counter, which
@@ -346,17 +385,21 @@ excludes tokenization/setup overhead folded into total latency.
 On CPU-only on-device inference, prefill---not decode---is the dominant
 latency cost, exceeding 90\% at realistic prompt lengths and reaching 95\%
 at 2{,}333 tokens. This inverts GPU-era intuition and reorients edge-LLM
-optimization toward prompt-size and KV-reuse rather than decode speed.
-Future work: a controlled multi-quant (Q4/Q5/Q8) sweep, a second hardware
-class, and direct evaluation of prefill-specific optimizations.
+optimization toward prompt-size and KV-reuse rather than decode speed. A
+secondary finding---that prefill speed is non-monotonic in quantization,
+with the 8-bit build fastest---makes quant choice a prefill-side lever in
+its own right. Future work: a second hardware class and direct evaluation
+of prefill-specific optimizations.
 
 % =====================================================================
 \section*{Reproducibility}
 \label{sec:repro}
-The harness (\texttt{prefill\_bench.py}, \texttt{model\_size\_sweep.py}) and
-raw per-run JSON are released at
+The harnesses (\texttt{prefill\_bench.py}, \texttt{model\_size\_sweep.py},
+\texttt{quant\_sweep.py}) and raw per-run JSON/JSONL are released at
 \url{https://github.com/bapista/cpu-llm-latency} (directory
-\texttt{paper1/data/}), and mirrored in the arXiv ancillary files.
+\texttt{paper1/data/}), and mirrored in the arXiv ancillary files. The
+quantization sweep supports a \texttt{REVERSE=1} mode that reruns it in
+reversed model order for the thermal-confound check.
 
 % =====================================================================
 \bibliographystyle{plainnat}

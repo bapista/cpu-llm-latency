@@ -1,0 +1,15 @@
+{"quant": "Q8_0", "rep": 0, "prompt_tok": 1297, "prefill_s": 24.372, "prefill_tps": 53.22, "reverse": true}
+{"quant": "Q8_0", "rep": 1, "prompt_tok": 1298, "prefill_s": 21.544, "prefill_tps": 60.25, "reverse": true}
+{"quant": "Q8_0", "rep": 2, "prompt_tok": 1298, "prefill_s": 20.667, "prefill_tps": 62.81, "reverse": true}
+{"quant": "Q8_0", "rep": 3, "prompt_tok": 1298, "prefill_s": 20.722, "prefill_tps": 62.64, "reverse": true}
+{"quant": "Q8_0", "rep": 4, "prompt_tok": 1298, "prefill_s": 20.662, "prefill_tps": 62.82, "reverse": true}
+{"quant": "Q5_K_M", "rep": 0, "prompt_tok": 1297, "prefill_s": 37.313, "prefill_tps": 34.76, "reverse": true}
+{"quant": "Q5_K_M", "rep": 1, "prompt_tok": 1298, "prefill_s": 37.358, "prefill_tps": 34.75, "reverse": true}
+{"quant": "Q5_K_M", "rep": 2, "prompt_tok": 1298, "prefill_s": 37.367, "prefill_tps": 34.74, "reverse": true}
+{"quant": "Q5_K_M", "rep": 3, "prompt_tok": 1298, "prefill_s": 37.308, "prefill_tps": 34.79, "reverse": true}
+{"quant": "Q5_K_M", "rep": 4, "prompt_tok": 1298, "prefill_s": 37.41, "prefill_tps": 34.7, "reverse": true}
+{"quant": "Q4_K_M", "rep": 0, "prompt_tok": 1297, "prefill_s": 27.918, "prefill_tps": 46.46, "reverse": true}
+{"quant": "Q4_K_M", "rep": 1, "prompt_tok": 1298, "prefill_s": 28.007, "prefill_tps": 46.35, "reverse": true}
+{"quant": "Q4_K_M", "rep": 2, "prompt_tok": 1298, "prefill_s": 28.029, "prefill_tps": 46.31, "reverse": true}
+{"quant": "Q4_K_M", "rep": 3, "prompt_tok": 1298, "prefill_s": 28.19, "prefill_tps": 46.05, "reverse": true}
+{"quant": "Q4_K_M", "rep": 4, "prompt_tok": 1298, "prefill_s": 28.022, "prefill_tps": 46.32, "reverse": true}

@@ -1,0 +1,35 @@
+[
+  {
+    "model": "qwen2.5:7b-instruct-q8_0",
+    "quant": "Q8_0",
+    "prompt_tok": 1298,
+    "prefill_s_mean": 21.59,
+    "prefill_s_std": 1.6,
+    "prefill_tps_mean": 60.35,
+    "prefill_tps_std": 4.13,
+    "prefill_pct_mean": 90,
+    "prefill_pct_std": 1.7
+  },
+  {
+    "model": "qwen2.5:7b-instruct-q5_K_M",
+    "quant": "Q5_K_M",
+    "prompt_tok": 1298,
+    "prefill_s_mean": 37.35,
+    "prefill_s_std": 0.04,
+    "prefill_tps_mean": 34.75,
+    "prefill_tps_std": 0.03,
+    "prefill_pct_mean": 95,
+    "prefill_pct_std": 2.3
+  },
+  {
+    "model": "qwen2.5:7b",
+    "quant": "Q4_K_M",
+    "prompt_tok": 1298,
+    "prefill_s_mean": 28.03,
+    "prefill_s_std": 0.1,
+    "prefill_tps_mean": 46.3,
+    "prefill_tps_std": 0.15,
+    "prefill_pct_mean": 91,
+    "prefill_pct_std": 0.6
+  }
+]
