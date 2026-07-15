@@ -8,7 +8,7 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
-main.pdf
+# main.pdf — committed (arXiv-ready draft)
 # but keep benchmark run logs (data provenance)
 !data/reps_run.log
 

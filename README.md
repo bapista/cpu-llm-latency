@@ -44,6 +44,15 @@ pdflatex main ; bibtex main ; pdflatex main ; pdflatex main
 Needs `pgfplots`, `algorithm`, `algpseudocode` (all in a full TeX Live / MacTeX).
 Figures render natively at compile time — no Python needed to build the PDF.
 
+**Zero-install build (recommended):** [Tectonic](https://tectonic-typesetting.github.io)
+is a single self-contained binary that fetches only the packages this paper uses:
+
+```
+tectonic main.tex          # → main.pdf, one command, no TeX distro required
+```
+
+The committed `main.pdf` was built this way (6 pages, arXiv-ready draft).
+
 ## Reproduce the measurements
 
 Each script is self-contained (standard library only) and talks to a local
