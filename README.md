@@ -55,6 +55,22 @@ REVERSE=1 python3 data/quant_sweep.py       # reversed order (thermal-confound c
 python3 data/review_pass_experiment.py      # review-pass latency + LLM-judge quality
 ```
 
+### Cross-hardware run (second CPU class)
+
+`data/cross_hw_sweep.py` is a self-contained one-command harness for a **second
+machine** (e.g. an ARM board) — the single biggest way to strengthen the paper
+(shows prefill dominance + the Q8-fastest quant ordering are not an AMD/Zen-4
+artifact). Copy the one file over and run:
+
+```
+python3 cross_hw_sweep.py          # auto-detects arch/CPU/RAM; runs both sweeps
+```
+
+It needs Ollama + the same models (`qwen2.5:7b`, `qwen2.5:7b-instruct-q5_K_M`,
+`-q8_0`); it gracefully skips a quant that won't fit in RAM. Output
+`cross_hw_<hostname>.json` drops one comparable row into the sweep/quant tables.
+Env knobs: `OLLAMA_BASE`, `REPS` (default 5), `LENGTHS`.
+
 ## Data honesty
 
 No measurements are invented. Every number in the paper traces to a raw file in
