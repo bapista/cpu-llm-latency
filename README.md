@@ -1,53 +1,75 @@
-# CPU-Only On-Device LLM Latency
+# Prefill Is the Bottleneck
 
-Code, data, and manuscripts for a two-paper program on the latency of running
-large language models **on commodity CPUs with no GPU** — the operating regime
-of sovereign, offline-first AI.
+Code, data, and manuscript for a measurement study of **CPU-only, on-device
+LLM latency** — the operating regime of sovereign, offline-first AI.
 
-The two papers form a problem→system pair and cross-cite each other:
+**Finding:** on commodity CPUs with no GPU, **prefill** (reading the prompt),
+not decode, dominates end-to-end latency — 92–96% at realistic prompt lengths,
+rising monotonically with prompt length and stable across 7B–9B model families.
+Two consequences: (1) prefill *speed* is **non-monotonic in quantization** —
+the 8-bit build prefills fastest, inverting the "quantize-down-for-speed"
+heuristic; (2) acting on this pays off — gating an extra "review/verify" model
+pass to only the hardest queries cuts latency **2.4×** with no measurable
+quality loss (order-swapped LLM judge).
 
-| Dir | Paper | One line |
-|-----|-------|----------|
-| [`paper1/`](paper1/) | **Prefill Is the Bottleneck** | On CPU-only inference, *prefill* (not decode) dominates end-to-end latency — 92–96% at realistic prompt lengths, stable across 7B–9B model families. |
-| [`paper2/`](paper2/) | **Spend Cognition, Not Parameters** | An *effort router* that routes the depth of cognition (not model size) to cut latency 2–6× above a ≥7B quality floor; the dominant lever is gating an extra review model pass. |
+> This repository was previously two companion papers (prefill-latency +
+> effort-router); they were **consolidated into this single paper** on
+> 2026-07-15. The two-paper drafts remain in the git history.
 
 ## Hardware
 
 All measurements: AMD Ryzen 7 8845HS (8C/16T, Zen 4), 14 GiB shared APU memory,
 **CPU-only** (integrated Radeon 780M unused), Ollama (llama.cpp), quantized 7–9B
-models. See each paper's methodology section for the exact protocol.
+models. See §3 (Methodology) for the exact protocol.
 
 ## Layout
 
 ```
-paper1/  prefill-dominated latency study
-  main.tex  references.bib  README.md
-  data/     benchmark harnesses (prefill_bench.py, model_size_sweep.py) + raw JSONL/JSON
-paper2/  effort-router study
-  main.tex  references.bib  README.md
-  data/     review_pass_experiment.py + review_pass_results.json
+main.tex        the paper (native pgfplots figures; no external assets to compile)
+references.bib  bibliography (all arXiv ids/authors verified vs arXiv 2026-07-15)
+data/           harnesses + raw results:
+  prefill_bench.py / prefill_bench_reps.py   prompt-length sweep (N=5)
+  model_size_sweep.py                        7B/8B/9B cross-family sweep
+  quant_sweep.py                             Q4/Q5/Q8 sweep (REVERSE=1 = thermal check)
+  review_pass_experiment.py                  controlled review-pass isolation (N=8)
+  *_summary.json / *_raw.jsonl               raw measured data
 ```
 
-## Build the papers (offline)
+## Build (offline)
 
 ```
-cd paper1   # or paper2
 pdflatex main ; bibtex main ; pdflatex main ; pdflatex main
 ```
 
-Needs `pgfplots` (TeX Live / MacTeX). Figures render natively at compile time —
-no Python needed to build the PDFs.
+Needs `pgfplots`, `algorithm`, `algpseudocode` (all in a full TeX Live / MacTeX).
+Figures render natively at compile time — no Python needed to build the PDF.
 
 ## Reproduce the measurements
 
-Each `data/` directory holds the self-contained Python harness (standard library
-only; talks to a local Ollama on `localhost:11434`). See each paper's README for
-the exact re-run command and which models must be resident.
+Each script is self-contained (standard library only) and talks to a local
+Ollama on `localhost:11434`. Re-run e.g.:
+
+```
+python3 data/quant_sweep.py                 # Q4/Q5/Q8 prefill sweep
+REVERSE=1 python3 data/quant_sweep.py       # reversed order (thermal-confound check)
+python3 data/review_pass_experiment.py      # review-pass latency + LLM-judge quality
+```
 
 ## Data honesty
 
-No measurements are invented. Every number in the papers traces to a raw file in
-the corresponding `data/` directory.
+No measurements are invented. Every number in the paper traces to a raw file in
+`data/`. The review-pass experiment and the quant sweep both run against
+`localhost` on the machine above; the effort-router deployment context (§6,
+Appendix A) is transcribed from the production system's source.
+
+## Remaining before submission
+
+- **Compile to PDF** on a full-TeX machine (no TeX on the measurement box).
+- **Second hardware class** (e.g. an ARM board) to show prefill dominance and the
+  quant ordering generalize across CPU microarchitectures — the biggest single
+  strengthener.
+- Broader review-pass quality set (harder/generative prompts, human labels).
+- arXiv submission (cs.PF / cs.DC) → a systems/edge-ML workshop.
 
 ## Author
 

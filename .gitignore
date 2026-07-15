@@ -10,7 +10,7 @@
 *.synctex.gz
 main.pdf
 # but keep benchmark run logs (data provenance)
-!paper1/data/reps_run.log
+!data/reps_run.log
 
 # Python
 __pycache__/

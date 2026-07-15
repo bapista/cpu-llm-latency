@@ -1,14 +1,14 @@
 % =====================================================================
-%  Prefill-Dominated Latency in CPU-Only On-Device LLM Inference
+%  Prefill Is the Bottleneck: CPU-Only On-Device LLM Latency + one lever
 %  arXiv draft  --  Bapista Khan / Collab-Foundry / NeuronAI
 %
 %  BUILD (offline):
 %     pdflatex main ; bibtex main ; pdflatex main ; pdflatex main
+%  Needs: pgfplots, algorithm, algpseudocode (all in TeX Live / MacTeX-full).
 %
-%  Data: research/prefill-latency-paper/data/  (raw JSONL + harness).
-%  Measured 2026-07-14 on the NeuronAI box (AMD Ryzen 7 8845HS, CPU-only).
-%  Remaining red [FILL] = genuinely-not-yet-run (multi-model / multi-rep),
-%  NOT fabricated. Prose [FILL] = author judgement to add.
+%  Data + harnesses: ./data/  (raw JSONL/JSON + Python). Measured 2026-07-14/15
+%  on the NeuronAI box (AMD Ryzen 7 8845HS, CPU-only). Every number traces to a
+%  file in data/; nothing is invented.
 % =====================================================================
 \documentclass[10pt,twocolumn]{article}
 
@@ -24,12 +24,14 @@
 \usepackage{caption}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \newcommand{\FILL}[1]{\textcolor{red}{[FILL: #1]}}
 \newcommand{\note}[1]{\textcolor{blue}{\small$\blacktriangleright$#1}}
 
-\title{\textbf{Prefill Is the Bottleneck: An Empirical Characterization
-of CPU-Only On-Device LLM Latency}}
+\title{\textbf{Prefill Is the Bottleneck: An Empirical Study of CPU-Only
+On-Device LLM Latency and One Lever That Exploits It}}
 
 \author{
   Bapista Khan\\
@@ -60,8 +62,12 @@ GPU-era assumption. Error bars are tight (prefill fraction 91$\pm$0.1\% at
 Gemma2-9B also sit at 95--96\% prefill at $\sim$1{,}300 tokens. We further
 find prefill speed is \emph{non-monotonic} in quantization: the 8-bit build
 prefills fastest and the intermediate K-quant slowest, inverting the
-``quantize-down-for-speed'' heuristic on CPU. We release the measurement
-harness and raw data.
+``quantize-down-for-speed'' heuristic on CPU. Finally, we translate the
+measurement into a deployment lever: in a controlled test, gating a second
+``review/verify'' model pass---the costliest optional stage in a typical
+agent pipeline---cuts latency 2.4$\times$ with \emph{no} measurable quality
+loss under an order-swapped LLM judge, showing the prefill finding pays off
+in practice. We release all harnesses and raw data.
 \end{abstract}
 
 % =====================================================================
@@ -89,8 +95,15 @@ We answer empirically. Our contributions, stated as measured facts:
         ($\geq$1{,}300 tokens) and reaches 95\% at 2{,}333 tokens
         (Section~\ref{sec:results}).
   \item A characterization of the prefill fraction as a monotonically
-        rising function of prompt length, and its consequences for edge
-        deployment (Sections~\ref{sec:results}--\ref{sec:discussion}).
+        rising function of prompt length, and the finding that prefill
+        \emph{speed} is non-monotonic in quantization---the 8-bit build is
+        fastest---making quant choice a prefill-side lever
+        (Section~\ref{sec:results-quant}).
+  \item A controlled demonstration that one prefill-motivated lever---gating
+        an extra ``review/verify'' model pass to only the hardest
+        queries---cuts latency 2.4$\times$ with no measurable quality loss,
+        translating the measurement into a deployment win
+        (Section~\ref{sec:lever}).
 \end{enumerate}
 
 \noindent\textbf{Scope.} The main sweep is deliberately bounded to
@@ -132,9 +145,20 @@ and sub-billion on-device models \cite{liu2024mobilellm}; we add a direct
 latency \emph{decomposition} on commodity CPU. Quantization reduces model
 footprint and cost \cite{dettmers2022llmint8, frantar2023gptq,
 xiao2023smoothquant, lin2024awq}; we treat 4-bit quantization as the
-operating context and, prospectively, a prefill-side lever
-(Section~\ref{sec:results-size}). We build on CPU-capable runtimes
+operating context and find quant choice is itself a prefill-side lever
+(Section~\ref{sec:results-quant}). We build on CPU-capable runtimes
 \cite{gerganov2023llamacpp, shen2023efficientcpu}.
+
+\paragraph{Spending compute adaptively.}
+Our deployment lever (Section~\ref{sec:lever}) relates to work that spends
+compute by difficulty. Cascades and routers send easy queries to cheaper
+models \cite{chen2023frugalgpt, ong2024routellm}; we instead keep a fixed
+$\geq$7B model and route \emph{pipeline effort}, motivated by the prefill
+cost model. Adaptive-computation methods exit the decoder early per token
+\cite{schuster2022calm}; we skip whole optional stages per request. This is
+orthogonal to decode-side acceleration such as speculative decoding
+\cite{leviathan2023speculative}, and we use an LLM judge
+\cite{zheng2023judging} to check the lever causes no quality regression.
 
 % =====================================================================
 \section{Methodology}
@@ -355,15 +379,76 @@ prompt, not the ones that speed up decode: (i) \emph{prompt-length
 discipline}---cap system/RAG context aggressively, since latency tracks
 context length; (ii) \emph{KV / prefix-cache reuse} across turns to avoid
 re-prefilling a shared prefix; (iii) \emph{prefill-side quantization} to
-lift the $\sim$46~tok/s prefill floor. In NeuronAI, budgeting the
-per-request prompt cut a Standard-lane query from 143~s to 55~s---an effect
-entirely on the prefill term, consistent with this data.
+lift the $\sim$46~tok/s prefill floor (Section~\ref{sec:results-quant}); and
+(iv) \emph{skipping optional pipeline stages} on easy queries, since the
+cheapest token is the one never prefilled or generated---the lever we
+measure in Section~\ref{sec:lever}. In NeuronAI, budgeting the per-request
+prompt (capping retrieved context) reduces latency entirely through the
+prefill term, consistent with this data.
 
 \paragraph{Connection to governed on-device autonomy.}
 On-device ``governed bounded autonomy'' is latency-gated by prefill: every
 governance rule, persona instruction, and retrieved passage added to the
 prompt is paid for at the $\sim$46~tok/s prefill rate before the model
 emits a token. The systems bottleneck and the deployment design meet here.
+
+% =====================================================================
+\section{A Controlled Lever: Gating the Second Model Pass}
+\label{sec:lever}
+If prefill (and, secondarily, decode) dominates cost, the cheapest token is
+the one never prefilled or generated; the highest-leverage move on CPU is to
+\emph{skip optional pipeline stages on easy queries}. The single most
+expensive optional stage in a typical agent pipeline is a second
+\emph{review/verify} model pass---a whole extra generation over the drafted
+answer. We test, in a controlled setting, whether that pass earns its
+latency.
+
+\paragraph{Setup.}
+On the same machine (Table~\ref{tab:hardware}), warm Qwen2.5-7B~(Q4), we
+answer 8 factual queries single-pass, then two-pass (draft $+$ a
+review/revise pass), one run each at temperature~0
+(Table~\ref{tab:reviewpass}). For \emph{quality} we ask an LLM
+judge~\cite{zheng2023judging}---run in \emph{both} orders per query to cancel
+position bias---whether the revised answer beats the single-pass one.
+
+\paragraph{Result.}
+The review pass raises latency \textbf{2.41$\times$}
+($11.96\rightarrow28.79$~s) while improving the answer in only \textbf{1 of
+8} cases (tied in 7, worse in none). It more than doubles latency for a
+quality gain undetectable on standard factual queries, so gating it to only
+the hardest queries is a near-free latency win. (The judge is an LLM on
+relatively easy prompts; harder or generative queries may benefit more,
+which is why a deployment should retain the pass for its hardest tier.)
+
+\begin{table}[t]
+  \centering
+  \caption{Controlled review-pass isolation: single- vs.\ two-pass latency
+  and order-swapped LLM-judge quality, over 8 matched queries (warm,
+  Qwen2.5-7B Q4, CPU-only). Std is across queries.}
+  \label{tab:reviewpass}
+  \small
+  \begin{tabular}{lr}
+    \toprule
+    Metric & Value \\
+    \midrule
+    Single-pass latency (s)       & 11.96$\pm$5.49 \\
+    Two-pass latency (s)          & 28.79$\pm$12.84 \\
+    Review-pass overhead          & 2.41$\times$ \\
+    \midrule
+    Revised answer judged better  & 1 / 8 \\
+    Tie                           & 7 / 8 \\
+    Single-pass judged better     & 0 / 8 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Deployment.}
+In NeuronAI this lever sits inside a three-lane \emph{effort router} (reflex
+/ standard / deep) that routes cognitive \emph{depth}---how many pipeline
+stages run---rather than model size, keeping a $\geq$7B model on every path.
+The review pass is enabled only on the deep lane. Lane assignment is a
+pure-heuristic, model-free classifier (Appendix~\ref{sec:appendix-router}),
+so routing itself adds no model call.
 
 % =====================================================================
 \section{Limitations}
@@ -377,7 +462,11 @@ second hardware class. We cap
 output at 64 tokens; very long generations would
 raise the decode share. We do not evaluate batched multi-user serving or
 GPU offload. Prefill is read directly from the runtime's counter, which
-excludes tokenization/setup overhead folded into total latency.
+excludes tokenization/setup overhead folded into total latency. The
+review-pass lever (Section~\ref{sec:lever}) is measured on 8 factual
+queries with an LLM judge; a broader query set (harder and generative
+prompts) and human labels, and a full per-lane latency re-run of the
+deployed router, remain future work.
 
 % =====================================================================
 \section{Conclusion \& Future Work}
@@ -388,18 +477,71 @@ at 2{,}333 tokens. This inverts GPU-era intuition and reorients edge-LLM
 optimization toward prompt-size and KV-reuse rather than decode speed. A
 secondary finding---that prefill speed is non-monotonic in quantization,
 with the 8-bit build fastest---makes quant choice a prefill-side lever in
-its own right. Future work: a second hardware class and direct evaluation
-of prefill-specific optimizations.
+its own right. Acting on the finding pays off: gating an extra review model
+pass to only the hardest queries cuts latency 2.4$\times$ with no measurable
+quality loss. On CPU, the cheapest token is the one never prefilled or
+generated. Future work: a second hardware class, a broader quality
+evaluation of the routing lever, and direct evaluation of prefill-specific
+optimizations.
 
 % =====================================================================
 \section*{Reproducibility}
 \label{sec:repro}
-The harnesses (\texttt{prefill\_bench.py}, \texttt{model\_size\_sweep.py},
-\texttt{quant\_sweep.py}) and raw per-run JSON/JSONL are released at
-\url{https://github.com/bapista/cpu-llm-latency} (directory
-\texttt{paper1/data/}), and mirrored in the arXiv ancillary files. The
-quantization sweep supports a \texttt{REVERSE=1} mode that reruns it in
-reversed model order for the thermal-confound check.
+All harnesses (\texttt{prefill\_bench.py}, \texttt{model\_size\_sweep.py},
+\texttt{quant\_sweep.py}, \texttt{review\_pass\_experiment.py}) and raw
+per-run JSON/JSONL are released at
+\url{https://github.com/bapista/cpu-llm-latency} (directory \texttt{data/}),
+and mirrored in the arXiv ancillary files. The quantization sweep supports a
+\texttt{REVERSE=1} mode that reruns it in reversed model order for the
+thermal-confound check.
+
+% =====================================================================
+\appendix
+\section{Effort-Router Lane Classifier}
+\label{sec:appendix-router}
+Algorithm~\ref{alg:route} gives the model-free classifier and hot-affinity
+model arbitration referenced in Section~\ref{sec:lever}. $G$ is the resident
+7B generalist; $hot$ is the currently loaded model ($\varnothing$ if none).
+
+\begin{algorithm}[h]
+\caption{Effort routing: lane classification (\textsc{ClassifyLane}) and
+hot-affinity model arbitration (\textsc{RouteEffort}).}
+\label{alg:route}
+\small
+\begin{algorithmic}[1]
+\Procedure{ClassifyLane}{$q$}\Comment{no model call}
+  \If{$q$ begins with \texttt{/think} or \texttt{/deep}}
+     \State \Return \textsc{deep}
+  \EndIf
+  \State $w \gets$ number of words in $q$
+  \If{$w \le 10$ \textbf{and} $q$ matches a greeting/ack, identity,
+      or time pattern}
+     \State \Return \textsc{reflex}
+  \EndIf
+  \If{$w > 80$ \textbf{or} $q$ has ${\ge}\,2$ question marks \textbf{or}
+      $q$ matches a hard-signal pattern}
+     \Statex \hfill{\footnotesize(legal, debug, prove, analyse, compare, design, \dots)}
+     \State \Return \textsc{deep}
+  \EndIf
+  \State \Return \textsc{standard}\Comment{ambiguous biases here}
+\EndProcedure
+\Statex
+\Procedure{RouteEffort}{$q$, $hot$}
+  \State $\ell \gets \Call{ClassifyLane}{q}$
+  \If{$\ell = \textsc{reflex}$ \textbf{and} $q$ is not a web task}
+     \State $m \gets hot$ \textbf{if} $hot$ is a non-embedder \textbf{else} $G$
+     \State \Return generalist troop, model $m$, \emph{skip} review/grounding
+  \EndIf
+  \State $prep \gets \Call{CommandPrepare}{q}$\Comment{best-fit specialist troop+model}
+  \If{$\ell \ne \textsc{deep}$ \textbf{and} $hot \ne \varnothing$ \textbf{and}
+      $hot$ is a non-embedder \textbf{and} $prep.\textit{model} \ne hot$}
+     \State $prep.\textit{model} \gets hot$\Comment{avoid a ${\sim}65$\,s reload}
+  \EndIf
+  \State $prep.\textit{review} \gets (\ell = \textsc{deep})$\Comment{review pass: Deep only}
+  \State \Return $prep$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
 
 % =====================================================================
 \bibliographystyle{plainnat}
