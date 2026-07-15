@@ -397,8 +397,16 @@ prefill/decode split on GPUs~\cite{kwon2023pagedattention,
 agrawal2024sarathi}; we operate single-user on CPU. On-device inference
 surveys~\cite{xu2024ondevicereview} catalogue compression and runtime
 levers; our contribution is a request-adaptive \emph{pipeline} policy.
-\FILL{add 2--3 more: adaptive computation / early-exit, LLM-as-judge cost,
-speculative decoding.}
+Our lane gating is a coarse, pipeline-level analogue of \emph{adaptive
+computation}: where confident adaptive language
+modeling~\cite{schuster2022calm} exits the decoder early per token, we skip
+whole pipeline stages per request, keeping a fixed model. \emph{Speculative
+decoding}~\cite{leviathan2023speculative} instead accelerates the decode
+phase itself; it is complementary and orthogonal to our prefill-motivated,
+stage-level routing. Finally, we use an LLM as an automatic quality
+judge~\cite{zheng2023judging} to check that gating the review pass causes no
+regression (Section~\ref{sec:eval}); we mitigate its known position bias by
+running each comparison in both orders.
 
 % =====================================================================
 \section{Conclusion}
