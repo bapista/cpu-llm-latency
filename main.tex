@@ -62,12 +62,14 @@ GPU-era assumption. Error bars are tight (prefill fraction 91$\pm$0.1\% at
 Gemma2-9B also sit at 95--96\% prefill at $\sim$1{,}300 tokens. We further
 find prefill speed is \emph{non-monotonic} in quantization: the 8-bit build
 prefills fastest and the intermediate K-quant slowest, inverting the
-``quantize-down-for-speed'' heuristic on CPU. Finally, we translate the
-measurement into a deployment lever: in a controlled test, gating a second
-``review/verify'' model pass---the costliest optional stage in a typical
-agent pipeline---cuts latency 2.4$\times$ with \emph{no} measurable quality
-loss under an order-swapped LLM judge, showing the prefill finding pays off
-in practice. We release all harnesses and raw data.
+``quantize-down-for-speed'' heuristic on CPU. Both effects reproduce on a
+second CPU vendor (Intel Comet Lake), where prefill dominance is if anything
+stronger. Finally, we translate the measurement into a deployment lever: in
+a controlled test, gating a second ``review/verify'' model pass---the
+costliest optional stage in a typical agent pipeline---cuts latency
+2.4$\times$ with \emph{no} measurable quality loss under an order-swapped LLM
+judge, showing the prefill finding pays off in practice. We release all
+harnesses and raw data.
 \end{abstract}
 
 % =====================================================================
@@ -108,10 +110,12 @@ We answer empirically. Our contributions, stated as measured facts:
 
 \noindent\textbf{Scope.} The main sweep is deliberately bounded to
 \emph{single-machine, CPU-only inference of one quantized 7B model}, with a
-cross-family spot-check at 7B--9B (Section~\ref{sec:results-size}) and a
-Q4/Q5/Q8 quantization sweep (Section~\ref{sec:results-quant}). We do not
-study batched multi-user serving, GPU offload, or a second hardware class;
-those are future work (Section~\ref{sec:limitations}).
+cross-family spot-check at 7B--9B (Section~\ref{sec:results-size}), a
+Q4/Q5/Q8 quantization sweep (Section~\ref{sec:results-quant}), and a
+cross-vendor replication on a second CPU (Intel;
+Section~\ref{sec:results-intel}). We do not study batched multi-user serving,
+GPU offload, or non-x86 (ARM) hardware; those are future work
+(Section~\ref{sec:limitations}).
 
 % =====================================================================
 \section{Background \& Related Work}
@@ -360,6 +364,47 @@ the highest-fidelity build, trading only memory footprint. This inverts the
 decode, and makes quantization choice a genuine prefill-side lever on edge
 hardware.
 
+\subsection{Generalization to a second CPU vendor}
+\label{sec:results-intel}
+To test whether these findings are specific to AMD/Zen~4, we repeat the
+prompt-length and quantization sweeps on a machine of a different vendor and
+microarchitecture: an \textbf{Intel Core i7-10700T} (Comet Lake, 8C/16T,
+35~W TDP, 2020), CPU-only, same Ollama/llama.cpp runtime and models
+($N{=}5$). Both findings carry over.
+
+\emph{Prefill still dominates---more so.} On the slower Intel part the
+prefill fraction is \emph{higher} at every prompt length---51\% at 121
+tokens, 85\% at 453, 93\% at 1{,}403, and 96\% at 2{,}439---than on the
+Ryzen, consistent with prefill's compute-bound cost growing faster than
+decode as the CPU slows. Prefill dominance is thus not a property of one
+vendor; if anything, weaker CPUs are \emph{more} prefill-bound.
+
+\emph{The non-monotonic quant ordering reproduces.} At a fixed
+$\sim$1{,}400-token prompt, Q8\_0 again prefills \emph{fastest} and
+Q5\_K\_M \emph{slowest} (Table~\ref{tab:intel})---the same ordering as on
+AMD. ``Q8 is fastest on CPU'' is therefore a property of the dequantization
+scheme, not of one microarchitecture. Absolute prefill throughput is
+$\sim$2.7$\times$ lower than the Ryzen (16.8 vs.\ 46.3 tok/s at Q4), as
+expected for a 2020 low-power part.
+
+\begin{table}[t]
+  \centering
+  \caption{Second CPU vendor: Intel Core i7-10700T (Comet Lake), CPU-only,
+  Qwen2.5-7B-Instruct, $\sim$1{,}400-token prompt, mean$\pm$std over 5 runs.
+  Both prefill dominance and the non-monotonic quant ordering reproduce.}
+  \label{tab:intel}
+  \small
+  \begin{tabular}{lrrr}
+    \toprule
+    Quant & Prefill (s) & tok/s & Prefill \% \\
+    \midrule
+    Q4\_K\_M & 83.54$\pm$0.46  & 16.8 & 93 \\
+    Q5\_K\_M & 105.23$\pm$1.67 & 13.3 & 98 \\
+    Q8\_0    & 71.77$\pm$0.53  & 19.5 & 95 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 % =====================================================================
 \section{Analysis \& Discussion}
 \label{sec:discussion}
@@ -454,11 +499,12 @@ so routing itself adds no model call.
 \section{Limitations}
 \label{sec:limitations}
 This study centers on one model (Qwen2.5-7B) and one runtime
-(Ollama/llama.cpp) on a single machine; the cross-family check
-(Table~\ref{tab:modelsize}) spans 7B--9B, and the quantization sweep
-(Table~\ref{tab:quant}) spans Q4/Q5/Q8 of that model. We report 5
-repetitions per point (mean$\pm$std); the main remaining extension is a
-second hardware class. We cap
+(Ollama/llama.cpp); the cross-family check (Table~\ref{tab:modelsize}) spans
+7B--9B, the quantization sweep (Table~\ref{tab:quant}) spans Q4/Q5/Q8, and we
+replicate on two x86 CPU vendors (AMD Zen~4 and Intel Comet Lake,
+Table~\ref{tab:intel}). We report 5 repetitions per point (mean$\pm$std); the
+main remaining extensions are \emph{non-x86} (ARM/mobile) hardware and
+batched serving. We cap
 output at 64 tokens; very long generations would
 raise the decode share. We do not evaluate batched multi-user serving or
 GPU offload. Prefill is read directly from the runtime's counter, which
@@ -480,16 +526,18 @@ with the 8-bit build fastest---makes quant choice a prefill-side lever in
 its own right. Acting on the finding pays off: gating an extra review model
 pass to only the hardest queries cuts latency 2.4$\times$ with no measurable
 quality loss. On CPU, the cheapest token is the one never prefilled or
-generated. Future work: a second hardware class, a broader quality
-evaluation of the routing lever, and direct evaluation of prefill-specific
-optimizations.
+generated. The prefill-dominance and quant findings reproduce across two x86
+CPU vendors (AMD and Intel). Future work: non-x86 (ARM/mobile) hardware, a
+broader quality evaluation of the routing lever, and direct evaluation of
+prefill-specific optimizations.
 
 % =====================================================================
 \section*{Reproducibility}
 \label{sec:repro}
 All harnesses (\texttt{prefill\_bench.py}, \texttt{model\_size\_sweep.py},
-\texttt{quant\_sweep.py}, \texttt{review\_pass\_experiment.py}) and raw
-per-run JSON/JSONL are released at
+\texttt{quant\_sweep.py}, \texttt{review\_pass\_experiment.py}, and
+\texttt{cross\_hw\_sweep.py} for the second machine) and raw per-run
+JSON/JSONL are released at
 \url{https://github.com/bapista/cpu-llm-latency} (directory \texttt{data/}),
 and mirrored in the arXiv ancillary files. The quantization sweep supports a
 \texttt{REVERSE=1} mode that reruns it in reversed model order for the

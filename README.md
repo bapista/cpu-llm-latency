@@ -18,9 +18,9 @@ quality loss (order-swapped LLM judge).
 
 ## Hardware
 
-All measurements: AMD Ryzen 7 8845HS (8C/16T, Zen 4), 14 GiB shared APU memory,
-**CPU-only** (integrated Radeon 780M unused), Ollama (llama.cpp), quantized 7–9B
-models. See §3 (Methodology) for the exact protocol.
+Primary machine: AMD Ryzen 7 8845HS (8C/16T, Zen 4), 14 GiB, **CPU-only**, Ollama
+(llama.cpp). Cross-vendor replication on an **Intel Core i7-10700T** (Comet Lake) —
+both findings reproduce (§4.5). See §3 for the protocol.
 
 ## Layout
 
@@ -90,9 +90,9 @@ Appendix A) is transcribed from the production system's source.
 ## Remaining before submission
 
 - **Compile to PDF** on a full-TeX machine (no TeX on the measurement box).
-- **Second hardware class** (e.g. an ARM board) to show prefill dominance and the
-  quant ordering generalize across CPU microarchitectures — the biggest single
-  strengthener.
+- ✅ **Second CPU vendor DONE** — Intel i7-10700T (Comet Lake): prefill dominance +
+  Q8-fastest ordering both reproduce (§4.5, Table 6; `data/cross_hw_olympus.json`).
+  Remaining: a **non-x86 (ARM/mobile)** datapoint via `data/cross_hw_sweep.py`.
 - Broader review-pass quality set (harder/generative prompts, human labels).
 - arXiv submission (cs.PF / cs.DC) → a systems/edge-ML workshop.
 
