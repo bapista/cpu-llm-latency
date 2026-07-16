@@ -1,0 +1,148 @@
+% Real, relevant references for the prefill-latency paper.
+% All arXiv ids, titles, author lists, venues, and years verified against
+% arXiv on 2026-07-15. (PowerInfer-2 4th author corrected Chen,Le -> Zheng,Xinrui.)
+
+% ---------- Inference systems: prefill/decode split ----------
+@inproceedings{kwon2023pagedattention,
+  title     = {Efficient Memory Management for Large Language Model Serving with {PagedAttention}},
+  author    = {Kwon, Woosuk and Li, Zhuohan and Zhuang, Siyuan and Sheng, Ying and Zheng, Lianmin and Yu, Cody Hao and Gonzalez, Joseph E. and Zhang, Hao and Stoica, Ion},
+  booktitle = {Proceedings of the 29th Symposium on Operating Systems Principles (SOSP)},
+  year      = {2023}
+}
+
+@inproceedings{patel2024splitwise,
+  title     = {Splitwise: Efficient Generative {LLM} Inference Using Phase Splitting},
+  author    = {Patel, Pratyush and Choukse, Esha and Zhang, Chaojie and Shah, Aashaka and Goiri, {\'I}{\~n}igo and Maleki, Saeed and Bianchini, Ricardo},
+  booktitle = {Proceedings of the 51st Annual International Symposium on Computer Architecture (ISCA)},
+  year      = {2024},
+  note      = {arXiv:2311.18677}
+}
+
+@inproceedings{zhong2024distserve,
+  title     = {{DistServe}: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving},
+  author    = {Zhong, Yinmin and Liu, Shengyu and Chen, Junda and Hu, Jianbo and Zhu, Yibo and Liu, Xuanzhe and Jin, Xin and Zhang, Hao},
+  booktitle = {18th USENIX Symposium on Operating Systems Design and Implementation (OSDI)},
+  year      = {2024},
+  note      = {arXiv:2401.09670}
+}
+
+@inproceedings{agrawal2024sarathi,
+  title     = {Taming Throughput-Latency Tradeoff in {LLM} Inference with {Sarathi-Serve}},
+  author    = {Agrawal, Amey and Kedia, Nitin and Panwar, Ashish and Mohan, Jayashree and Kwatra, Nipun and Gulavani, Bhargav and Tumanov, Alexey and Ramjee, Ramachandran},
+  booktitle = {18th USENIX Symposium on Operating Systems Design and Implementation (OSDI)},
+  pages     = {117--134},
+  year      = {2024}
+}
+
+% ---------- On-device / edge inference ----------
+@article{xu2024ondevicereview,
+  title   = {On-Device Language Models: A Comprehensive Review},
+  author  = {Xu, Jiajun and Li, Zhiyuan and Chen, Wei and Wang, Qun and Gao, Xin and Cai, Qi and Ling, Ziyuan},
+  journal = {arXiv preprint arXiv:2409.00088},
+  year    = {2024}
+}
+
+@inproceedings{alizadeh2024llmflash,
+  title     = {{LLM} in a Flash: Efficient Large Language Model Inference with Limited Memory},
+  author    = {Alizadeh, Keivan and Mirzadeh, Iman and Belenko, Dmitry and Khatamifard, Karen and Cho, Minsik and Del Mundo, Carlo C. and Rastegari, Mohammad and Farajtabar, Mehrdad},
+  booktitle = {Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2024},
+  note      = {arXiv:2312.11514}
+}
+
+@article{xue2024powerinfer2,
+  title   = {{PowerInfer-2}: Fast Large Language Model Inference on a Smartphone},
+  author  = {Xue, Zhenliang and Song, Yixin and Mi, Zeyu and Zheng, Xinrui and Xia, Yubin and Chen, Haibo},
+  journal = {arXiv preprint arXiv:2406.06282},
+  year    = {2024}
+}
+
+@inproceedings{liu2024mobilellm,
+  title     = {{MobileLLM}: Optimizing Sub-billion Parameter Language Models for On-Device Use Cases},
+  author    = {Liu, Zechun and Zhao, Changsheng and Iandola, Forrest and Lai, Chen and Tian, Yuandong and Fedorov, Igor and Xiong, Yunyang and Chang, Ernie and Shi, Yangyang and Krishnamoorthi, Raghuraman and Blankevoort, Tijmen and Chandra, Vikas},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2024}
+}
+
+% ---------- Quantization ----------
+@inproceedings{dettmers2022llmint8,
+  title     = {{LLM.int8()}: 8-bit Matrix Multiplication for Transformers at Scale},
+  author    = {Dettmers, Tim and Lewis, Mike and Belkada, Younes and Zettlemoyer, Luke},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2022}
+}
+
+@inproceedings{frantar2023gptq,
+  title     = {{GPTQ}: Accurate Post-Training Quantization for Generative Pre-trained Transformers},
+  author    = {Frantar, Elias and Ashkboos, Saleh and Hoefler, Torsten and Alistarh, Dan},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023}
+}
+
+@inproceedings{xiao2023smoothquant,
+  title     = {{SmoothQuant}: Accurate and Efficient Post-Training Quantization for Large Language Models},
+  author    = {Xiao, Guangxuan and Lin, Ji and Seznec, Mickael and Wu, Hao and Demouth, Julien and Han, Song},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2023}
+}
+
+@inproceedings{lin2024awq,
+  title     = {{AWQ}: Activation-aware Weight Quantization for {LLM} Compression and Acceleration},
+  author    = {Lin, Ji and Tang, Jiaming and Tang, Haotian and Yang, Shang and Chen, Wei-Ming and Wang, Wei-Chen and Xiao, Guangxuan and Dang, Xingyu and Gan, Chuang and Han, Song},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  year      = {2024}
+}
+
+% ---------- CPU-capable runtimes ----------
+@misc{gerganov2023llamacpp,
+  title        = {llama.cpp: {LLM} inference in {C/C++}},
+  author       = {Gerganov, Georgi and {llama.cpp contributors}},
+  year         = {2023},
+  howpublished = {\url{https://github.com/ggml-org/llama.cpp}}
+}
+
+@article{shen2023efficientcpu,
+  title   = {Efficient {LLM} Inference on {CPUs}},
+  author  = {Shen, Haihao and Chang, Hanwen and Dong, Bo and Luo, Yu and Meng, Hengyu},
+  journal = {arXiv preprint arXiv:2311.00502},
+  year    = {2023}
+}
+
+% ---------- LLM routing / cascades ----------
+@article{chen2023frugalgpt,
+  title   = {{FrugalGPT}: How to Use Large Language Models While Reducing Cost and Improving Performance},
+  author  = {Chen, Lingjiao and Zaharia, Matei and Zou, James},
+  journal = {arXiv preprint arXiv:2305.05176},
+  year    = {2023}
+}
+
+@article{ong2024routellm,
+  title   = {{RouteLLM}: Learning to Route {LLMs} with Preference Data},
+  author  = {Ong, Isaac and Almahairi, Amjad and Wu, Vincent and Chiang, Wei-Lin and Wu, Tianhao and Gonzalez, Joseph E. and Kadous, M. Waleed and Stoica, Ion},
+  journal = {arXiv preprint arXiv:2406.18665},
+  year    = {2024}
+}
+
+% ---------- Adaptive computation / early-exit ----------
+@inproceedings{schuster2022calm,
+  title     = {Confident Adaptive Language Modeling},
+  author    = {Schuster, Tal and Fisch, Adam and Gupta, Jai and Dehghani, Mostafa and Bahri, Dara and Tran, Vinh Q. and Tay, Yi and Metzler, Donald},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2022}
+}
+
+% ---------- LLM-as-judge ----------
+@inproceedings{zheng2023judging,
+  title     = {Judging {LLM}-as-a-Judge with {MT-Bench} and {Chatbot} {Arena}},
+  author    = {Zheng, Lianmin and Chiang, Wei-Lin and Sheng, Ying and Zhuang, Siyuan and Wu, Zhanghao and Zhuang, Yonghao and Lin, Zi and Li, Zhuohan and Li, Dacheng and Xing, Eric P. and Zhang, Hao and Gonzalez, Joseph E. and Stoica, Ion},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track},
+  year      = {2023}
+}
+
+% ---------- Speculative decoding ----------
+@inproceedings{leviathan2023speculative,
+  title     = {Fast Inference from Transformers via Speculative Decoding},
+  author    = {Leviathan, Yaniv and Kalman, Matan and Matias, Yossi},
+  booktitle = {Proceedings of the 40th International Conference on Machine Learning (ICML)},
+  year      = {2023}
+}

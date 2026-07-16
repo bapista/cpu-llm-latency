@@ -23,3 +23,8 @@ __pycache__/
 arxiv-submission.tar.gz
 main.bbl
 main.aux
+
+# hotmobile build artifacts
+hotmobile/main.pdf
+hotmobile/main.bbl
+hotmobile/main.aux
