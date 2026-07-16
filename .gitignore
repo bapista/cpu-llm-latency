@@ -18,3 +18,8 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# arXiv bundle (regenerate from main.tex + main.bbl)
+arxiv-submission.tar.gz
+main.bbl
+main.aux
