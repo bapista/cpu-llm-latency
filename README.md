@@ -16,6 +16,17 @@ quality loss (order-swapped LLM judge).
 > effort-router); they were **consolidated into this single paper** on
 > 2026-07-15. The two-paper drafts remain in the git history.
 
+## Companion work
+
+- **Paper 2 — [On-Device LLM Latency on Apple Silicon (MLX)](https://doi.org/10.5281/zenodo.21786211)** ·
+  the same measurement on unified-memory hardware, where the bottleneck inverts
+  ([code](https://github.com/bapista/mlx-llm-latency))
+- **Paper 3 — [The Bottleneck Moves Twice: Three Regimes of On-Device LLM Latency](https://doi.org/10.5281/zenodo.21818301)** ·
+  combines both studies: the bottleneck moves *twice* on a single device as context grows —
+  decode-bound, then prefill-bound, then memory-bound
+- **[Rung](https://github.com/bapista/rung)** — effort-aware, on-device-first LLM router
+- **[Ratchet](https://github.com/bapista/ratchet)** — eval-and-promote gate for fine-tuned adapters
+
 ## Hardware
 
 Primary machine: AMD Ryzen 7 8845HS (8C/16T, Zen 4), 14 GiB, **CPU-only**, Ollama
