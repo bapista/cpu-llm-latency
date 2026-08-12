@@ -1,0 +1,93 @@
+{
+  "hardware": {
+    "hostname": "tuxedo",
+    "arch": "x86_64",
+    "system": "Linux",
+    "cpu": "AMD Ryzen 7 8845HS w/ Radeon 780M Graphics",
+    "cores_logical": 16,
+    "ram_gib": 14.9,
+    "ollama_version": "0.19.0"
+  },
+  "reps": 5,
+  "base_model": "qwen2.5:7b",
+  "prompt_length_sweep": [
+    {
+      "target_tok": 64,
+      "prompt_tok": 121,
+      "prefill_s_mean": 1.87,
+      "prefill_s_std": 0.03,
+      "decode_s_mean": 2.39,
+      "decode_s_std": 0.01,
+      "prefill_pct_mean": 43.9,
+      "prefill_pct_std": 0.4
+    },
+    {
+      "target_tok": 384,
+      "prompt_tok": 453,
+      "prefill_s_mean": 8.69,
+      "prefill_s_std": 0.07,
+      "decode_s_mean": 1.74,
+      "decode_s_std": 0.01,
+      "prefill_pct_mean": 83.3,
+      "prefill_pct_std": 0.1
+    },
+    {
+      "target_tok": 1300,
+      "prompt_tok": 1403,
+      "prefill_s_mean": 29.6,
+      "prefill_s_std": 0.24,
+      "decode_s_mean": 2.78,
+      "decode_s_std": 0.36,
+      "prefill_pct_mean": 91.4,
+      "prefill_pct_std": 1.0
+    },
+    {
+      "target_tok": 2300,
+      "prompt_tok": 2439,
+      "prefill_s_mean": 53.7,
+      "prefill_s_std": 0.43,
+      "decode_s_mean": 2.48,
+      "decode_s_std": 0.01,
+      "prefill_pct_mean": 95.6,
+      "prefill_pct_std": 0.0
+    }
+  ],
+  "quant_sweep": [
+    {
+      "quant": "Q4_K_M",
+      "model": "qwen2.5:7b",
+      "status": "ok",
+      "prompt_tok": 1402,
+      "prefill_s_mean": 30.08,
+      "prefill_s_std": 0.57,
+      "prefill_tps_mean": 46.61,
+      "prefill_tps_std": 0.86,
+      "prefill_pct_mean": 92,
+      "prefill_pct_std": 1.1
+    },
+    {
+      "quant": "Q5_K_M",
+      "model": "qwen2.5:7b-instruct-q5_K_M",
+      "status": "ok",
+      "prompt_tok": 1402,
+      "prefill_s_mean": 39.69,
+      "prefill_s_std": 0.3,
+      "prefill_tps_mean": 35.32,
+      "prefill_tps_std": 0.26,
+      "prefill_pct_mean": 97,
+      "prefill_pct_std": 0.0
+    },
+    {
+      "quant": "Q8_0",
+      "model": "qwen2.5:7b-instruct-q8_0",
+      "status": "ok",
+      "prompt_tok": 1402,
+      "prefill_s_mean": 21.95,
+      "prefill_s_std": 1.3,
+      "prefill_tps_mean": 64.03,
+      "prefill_tps_std": 3.69,
+      "prefill_pct_mean": 92,
+      "prefill_pct_std": 0.7
+    }
+  ]
+}
