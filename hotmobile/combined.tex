@@ -204,6 +204,39 @@ regime~3.
 \section{Why the Bottleneck Moves}
 \label{sec:why}
 
+\subsection{Why the share is invariant}
+\label{sec:invariance-analysis}
+
+The invariance of Section~\ref{sec:three} is not a coincidence; it follows from the definition of the
+quantity. Write $N_p$ for prompt tokens, $N_o$ for generated tokens, and $R_p$, $R_d$ for the platform's
+prefill and decode rates in tokens per second. The prefill share of end-to-end latency is
+
+\begin{equation}
+\phi \;=\; \frac{N_p/R_p}{N_p/R_p + N_o/R_d}
+      \;=\; \frac{1}{1 + \rho\,\dfrac{N_o}{N_p}},
+\qquad \rho \equiv \frac{R_p}{R_d}.
+\label{eq:share}
+\end{equation}
+
+Only two quantities appear: the workload shape $N_o/N_p$, and $\rho$, the \emph{ratio} of the two rates.
+Absolute speed does not. If one platform is $k$ times faster than another at everything---$R_p \!\to\! kR_p$
+and $R_d \!\to\! kR_d$---then $\rho$ is unchanged and so is $\phi$. Two machines whose wall-clock differs by
+an order of magnitude therefore report the same share, which is precisely what
+Section~\ref{sec:three} measures: a $14\times$ spread in latency and a two-point spread in $\phi$.
+
+Equation~\ref{eq:share} also says when the invariance \emph{must} fail: whenever $\rho$ is not constant
+across platforms. That gives two predictions, and the rest of this section is their two instances.
+
+\paragraph{Prediction 1: accelerators that parallelise prefill.} A GPU raises $R_p$ far more than $R_d$,
+since prefill is parallel across tokens while decode is sequential and bandwidth-bound. Larger $\rho$ means
+smaller $\phi$: the platform looks decode-bound. \emph{This is the datacentre intuition, and
+Equation~\ref{eq:share} reproduces it as a special case rather than a contradiction.} We measure no
+accelerated device here, so we claim invariance only across non-accelerated platforms.
+
+\paragraph{Prediction 2: collapse of $R_d$.} If decode throughput falls sharply while prefill is unaffected,
+$\rho$ rises and $\phi$ turns back down---not because prefill got cheaper, but because decode got worse.
+The regime~2~$\rightarrow$~3 transition below is exactly this.
+
 Two transitions, two mechanisms.
 
 \paragraph{Regime 1 $\rightarrow$ 2.} Prefill is a single pass over the context and is parallel across tokens;
