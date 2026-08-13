@@ -33,20 +33,42 @@ On-Device LLM Latency}
 \email{bapistakhan@gmail.com}
 \renewcommand{\shortauthors}{Bapista Khan}
 
+% ==========================================================================
+% ABSTRACT REPOSITIONED 2026-08-13 around the cross-hardware invariance result.
+% Rationale and related-work analysis: see REPOSITION.md in this directory.
+%
+% !! THE BODY DOES NOT YET SUPPORT THIS ABSTRACT. Before submitting (9 Oct):
+%   [ ] Add the ARM SBC arm (Raspberry Pi 5, Cortex-A76) to method + results
+%   [ ] Add the cross-machine invariance table (x86 Zen4 / x86 Comet Lake / ARM)
+%   [ ] Add the same-model control (identical 7B Q4_K_M: 30.08 s vs 431.72 s,
+%       92% vs 94% prefill share)
+%   [ ] Re-run at 5 reps (currently 3) and re-measure the ~1,455-token point
+%   [ ] Related work: cite Na et al. IISWC'24 (datacentre CPUs, AMX/HBM) and
+%       arXiv:2508.08531 (Apple Silicon quantisation) -- DEFER to the latter on
+%       quantisation non-monotonicity; it is corroboration, not a contribution
+%   [ ] State explicitly that no GPU was measured
+% ==========================================================================
 \begin{abstract}
-On-device language models are increasingly deployed for privacy, offline operation and cost, yet the latency
-intuition the community carries is inherited from datacentre GPU serving, where autoregressive \emph{decode}
-dominates. We instrumented end-to-end inference across two on-device platforms and four model sizes, and found
-that the bottleneck does not merely differ between devices---\textbf{it moves, twice, on a single device, as a
-function of context length alone}. On an 8\,GB Apple Silicon device a 3B model is \emph{decode-bound} at short
-context (prefill 20\% of latency), becomes \emph{prefill-bound} through the middle (peaking at 80\% near 1{,}500
-tokens), and then \emph{re-inverts} toward decode past $\sim$2{,}029 tokens as weights plus KV cache exhaust
-unified memory and decode throughput collapses from 49 to 17\,tok/s. Smaller models on the same device never
-reach the third regime; a CPU-only machine, by contrast, never leaves the second, climbing monotonically to
-95\% prefill. \textbf{How many regimes a deployment traverses is set by the headroom between model footprint
-and memory capacity}---which makes it a design-time property, not a runtime detail. We argue this has immediate
-consequences for how the mobile systems community benchmarks, schedules and budgets on-device inference, and
-that single-number throughput reporting conceals all three transitions. Harnesses and raw data are released.
+On-device language models are deployed for privacy, offline operation and cost, yet the latency intuition the
+community carries is inherited from datacentre GPU serving, where autoregressive \emph{decode} dominates. Prior
+work has characterised inference on datacentre CPUs with matrix accelerators and HBM, and quantisation effects
+on high-end Apple Silicon. We ask a question neither answers: \textbf{across the commodity hardware an
+organisation actually owns, how much of latency behaviour is a property of the machine, and how much is a
+property of the workload?}
+We instrument end-to-end inference across four on-device platforms---two x86 CPU vendors, an ARM single-board
+computer, and 8\,GB Apple Silicon---and find that \textbf{the prefill share of end-to-end latency converges to
+within two percentage points at a given context length across all non-accelerated devices}, despite absolute
+latency differing by up to 14$\times$ and model size by 4.7$\times$. At $\sim$1{,}400 prompt tokens every such
+device sits at 91--94\% prefill; by $\sim$2{,}440 tokens, 96--97\%. A same-model control isolates the effect:
+identical weights, 14.4$\times$ apart in wall-clock, two points apart in share.
+The invariance breaks in exactly one circumstance. When weights plus KV cache exhaust memory, the device
+re-inverts to decode-bound and throughput collapses---49 to 17\,tok/s on 8\,GB Apple Silicon beyond
+$\sim$2{,}029 tokens. \textbf{How many regimes a deployment traverses is therefore set by memory headroom},
+a design-time property readable from specifications.
+Together these make on-device latency \textbf{predictable before execution}: the regime follows from the
+prompt, and the regime boundary follows from the hardware. We argue this is the missing precondition for
+regime-aware scheduling across heterogeneous owned devices, and that single-number throughput reporting
+conceals both properties. Harnesses and raw data are released.
 \end{abstract}
 
 \keywords{on-device inference, mobile systems, LLM, latency, prefill, memory wall, measurement}
