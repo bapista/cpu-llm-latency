@@ -1,0 +1,79 @@
+{
+  "hardware": {
+    "hostname": "hermes",
+    "arch": "aarch64",
+    "system": "Linux",
+    "cpu": "aarch64",
+    "cores_logical": 4,
+    "ram_gib": 15.6,
+    "ollama_version": "0.17.7"
+  },
+  "reps": 5,
+  "base_model": "qwen2.5:1.5b",
+  "prompt_length_sweep": [
+    {
+      "target_tok": 64,
+      "prompt_tok": 121,
+      "prefill_s_mean": 7.53,
+      "prefill_s_std": 4.69,
+      "decode_s_mean": 7.04,
+      "decode_s_std": 3.57,
+      "prefill_pct_mean": 51.0,
+      "prefill_pct_std": 16.0
+    },
+    {
+      "target_tok": 384,
+      "prompt_tok": 453,
+      "prefill_s_mean": 25.7,
+      "prefill_s_std": 0.83,
+      "decode_s_mean": 6.95,
+      "decode_s_std": 2.57,
+      "prefill_pct_mean": 79.1,
+      "prefill_pct_std": 6.3
+    },
+    {
+      "target_tok": 1300,
+      "prompt_tok": 1403,
+      "prefill_s_mean": 97.78,
+      "prefill_s_std": 2.76,
+      "decode_s_mean": 9.44,
+      "decode_s_std": 1.62,
+      "prefill_pct_mean": 91.2,
+      "prefill_pct_std": 1.5
+    },
+    {
+      "target_tok": 2300,
+      "prompt_tok": 2439,
+      "prefill_s_mean": 197.39,
+      "prefill_s_std": 7.44,
+      "decode_s_mean": 6.39,
+      "decode_s_std": 3.42,
+      "prefill_pct_mean": 96.9,
+      "prefill_pct_std": 1.6
+    }
+  ],
+  "quant_sweep": [
+    {
+      "quant": "Q4_K_M",
+      "model": "qwen2.5:7b",
+      "status": "ok",
+      "prompt_tok": 1402,
+      "prefill_s_mean": 431.72,
+      "prefill_s_std": 3.03,
+      "prefill_tps_mean": 3.25,
+      "prefill_tps_std": 0.02,
+      "prefill_pct_mean": 94,
+      "prefill_pct_std": 0.8
+    },
+    {
+      "quant": "Q5_K_M",
+      "model": "qwen2.5:7b-instruct-q5_K_M",
+      "status": "not_installed"
+    },
+    {
+      "quant": "Q8_0",
+      "model": "qwen2.5:7b-instruct-q8_0",
+      "status": "not_installed"
+    }
+  ]
+}
