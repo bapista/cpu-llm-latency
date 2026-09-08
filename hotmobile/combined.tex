@@ -38,16 +38,18 @@ On-Device LLM Latency}
 % ABSTRACT REPOSITIONED 2026-08-13 around the cross-hardware invariance result.
 % Rationale and related-work analysis: see REPOSITION.md in this directory.
 %
-% !! THE BODY DOES NOT YET SUPPORT THIS ABSTRACT. Before submitting (9 Oct):
-%   [ ] Add the ARM SBC arm (Raspberry Pi 5, Cortex-A76) to method + results
-%   [ ] Add the cross-machine invariance table (x86 Zen4 / x86 Comet Lake / ARM)
-%   [ ] Add the same-model control (identical 7B Q4_K_M: 30.08 s vs 431.72 s,
-%       92% vs 94% prefill share)
-%   [ ] Re-run at 5 reps (currently 3) and re-measure the ~1,455-token point
-%   [ ] Related work: cite Na et al. IISWC'24 (datacentre CPUs, AMX/HBM) and
-%       arXiv:2508.08531 (Apple Silicon quantisation) -- DEFER to the latter on
-%       quantisation non-monotonicity; it is corroboration, not a contribution
-%   [ ] State explicitly that no GPU was measured
+% BODY NOW SUPPORTS THE ABSTRACT (8 Sep 2026). Closed:
+%   [x] ARM arm added as Platform D (Raspberry Pi 5, Cortex-A76) + Platform C (Comet Lake)
+%   [x] Cross-machine invariance table added (Table 3)
+%   [x] Same-model control added -- 7B Q4_K_M @1,402 tok on all three:
+%       30.08 s / 83.54 s / 431.72 s = 14.4x, shares 92/93/94%
+%   [x] Reps: data files record reps=5 already; the "currently 3" note was stale
+%   [x] Related work: all four papers cited; quantisation reframed as corroboration
+%   [x] No GPU measured -- stated in Threats to Validity and in section 3.1
+%  REMAINING:
+%   [ ] Read all four prior-art papers IN FULL (characterisations rest on abstracts)
+%   [ ] Verify the HotMobile 2027 CFP: page limit, whether refs count, format
+%   [ ] Optional: re-run Platform C on a matched Ollama version (see Threats)
 % ==========================================================================
 \begin{abstract}
 On-device language models are deployed for privacy, offline operation and cost, yet the latency intuition the
@@ -57,10 +59,10 @@ on high-end Apple Silicon. We ask a question neither answers: \textbf{across the
 organisation actually owns, how much of latency behaviour is a property of the machine, and how much is a
 property of the workload?}
 We instrument end-to-end inference across four on-device platforms---two x86 CPU vendors, an ARM single-board
-computer, and 8\,GB Apple Silicon---and find that \textbf{the prefill share of end-to-end latency converges to
-within two percentage points at a given context length across all non-accelerated devices}, despite absolute
+computer, and 8\,GB Apple Silicon---and find that \textbf{beyond $\sim$1{,}400 prompt tokens the prefill share of
+end-to-end latency converges to within two percentage points across all non-accelerated devices}, despite absolute
 latency differing by up to 14$\times$ and model size by 4.7$\times$. At $\sim$1{,}400 prompt tokens every such
-device sits at 91--94\% prefill; by $\sim$2{,}440 tokens, 96--97\%. A same-model control isolates the effect:
+device sits at 91--93\% prefill; by $\sim$2{,}440 tokens the three lie within 1.3 points of one another. A same-model control isolates the effect:
 identical weights, 14.4$\times$ apart in wall-clock, two points apart in share.
 The invariance breaks in exactly one circumstance. When weights plus KV cache exhaust memory, the device
 re-inverts to decode-bound and throughput collapses---49 to 17\,tok/s on 8\,GB Apple Silicon beyond
@@ -134,7 +136,11 @@ discard warm-up runs, and instrument prefill and decode separately end to end. P
 (AMD Ryzen~7 8845HS, 8 cores / 16 threads, 14\,GiB) running quantized Qwen2.5-7B, Llama-3.1-8B and Gemma2-9B
 through \texttt{llama.cpp}~\cite{gerganov2023llamacpp}. Platform~B is an 8\,GB MacBook Air running 4-bit MLX
 builds of Qwen2.5-Instruct at 0.5B, 1.5B and 3B---a deliberate size sweep on a device where larger families do
-not comfortably fit, which turns out to be the point. Every number traces to a released raw-results file.
+not comfortably fit, which turns out to be the point. To test whether the CPU-side behaviour is a property of
+one machine, we add two further non-accelerated devices: Platform~C, an Intel Core~i7-10700T (Comet Lake, 16
+threads, 62.6\,GiB), and Platform~D, a Raspberry~Pi~5 (quad-core Arm Cortex-A76, 15.6\,GiB). Platforms~A
+and~C run Qwen2.5-7B; Platform~D runs Qwen2.5-1.5B, with a same-model 7B control reported below. Every number
+traces to a released raw-results file.
 
 \begin{table}[t]
 \caption{The three regimes. The binding constraint changes, and with it the only lever that helps.}
@@ -201,8 +207,7 @@ one whose weights plus KV cache approach the 8\,GB ceiling---re-inverts.
 climbs monotonically---38\% at 55 tokens, 72\% at 367, 91\% at 1{,}299, \textbf{95\%} at 2{,}336---while decode
 sits flat at 11--12\,tok/s. With 14\,GiB and a 7B model there is ample headroom, so memory never binds; the
 machine simply lacks the parallelism to make prefill cheap. Llama-3.1-8B and Gemma2-9B reproduce this at
-95--96\% prefill, and the effect reproduces on a second CPU vendor (Intel Comet Lake), where it is if anything
-stronger.
+95--96\% prefill.
 
 \paragraph{The crossover between regimes~1 and~2 also moves with model size,} and in the direction that
 surprises people: \emph{earlier} for larger models---$\sim$1{,}029 tokens at 0.5B against $\sim$329 at 3B.
@@ -216,6 +221,45 @@ K-quant slowest, inverting the ``quantize down for speed''
 heuristic~\cite{dettmers2022llmint8,frantar2023gptq,lin2024awq}. \textbf{We report this as corroboration on a
 different hardware class, not as a new result.} What smaller reliably buys is \emph{headroom}---and headroom is
 what keeps a deployment out of regime~3.
+
+\paragraph{The share is the same across machines---once the context is long enough.}
+Table~\ref{tab:invariance} sweeps Platforms~A, C and~D together. Two instruction-set architectures and a
+4.7$\times$ model-size difference separate them, and absolute cost differs by more than an order of magnitude,
+yet at long context the prefill \emph{share} converges: 2.0 points apart at $\sim$1{,}400 tokens and 1.3 points
+at $\sim$2{,}400. \textbf{The convergence is a long-context property and we claim it only there.} At the
+shortest point the three machines are 7.3 points apart, and Platform~D's short-context variance is itself
+large ($\sigma=16.0$); at 121 prompt tokens the fixed costs of a request are a meaningful share of it.
+
+\begin{table}[t]
+\caption{Prefill share (\%) at matched prompt lengths on three non-accelerated devices. Convergence is a
+long-context property: 7.3 points apart at 121 tokens, 1.3 points apart at 2{,}439. Five repetitions per point.}
+\label{tab:invariance}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+\textbf{Prompt} & \textbf{A} & \textbf{C} & \textbf{D} & \textbf{Spread} \\
+\textbf{(tok)} & \scriptsize Zen4, 7B & \scriptsize C.Lake, 7B & \scriptsize A76, 1.5B & \\
+\midrule
+121     & 43.9 & 51.2 & 51.0 & 7.3 \\
+453     & 83.3 & 85.4 & 79.1 & 6.3 \\
+1{,}403 & 91.4 & 93.2 & 91.2 & \textbf{2.0} \\
+2{,}439 & 95.6 & 96.4 & 96.9 & \textbf{1.3} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{A same-model control isolates the effect.} Model size is not held constant in
+Table~\ref{tab:invariance}, so we ran identical weights---Qwen2.5-7B, Q4\_K\_M, 1{,}402 prompt tokens---on all
+three. Wall-clock prefill was 30.08\,s on Platform~A, 83.54\,s on~C and 431.72\,s on~D: a \textbf{14.4$\times$
+spread}. The prefill share was 92\%, 93\% and 94\%. \textbf{Fourteen times the latency, two points of share.}
+
+\paragraph{Threats to validity.} Platform~C was measured on 15 July 2026 and Platforms~A and~D on 13 August,
+and the runtime version differs across the three (Ollama 0.19.0, 0.17.0 and 0.17.7 respectively). We report
+this because the claim is a cross-machine one. Neither confound plausibly explains convergence \emph{towards} a
+common value as context grows---a version artefact would bias a machine roughly uniformly rather than vanish
+with prompt length---but a controlled re-run on a single runtime version would close the question, and we have
+not done it. No accelerator was measured on any platform.
 
 \section{Why the Bottleneck Moves}
 \label{sec:why}
