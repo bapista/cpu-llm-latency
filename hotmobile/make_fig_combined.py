@@ -88,17 +88,18 @@ def main() -> int:
     ax.axhspan(0, 50, color="#4c78a8", alpha=0.06, zorder=0)
     ax.axhline(50, color="#999999", lw=0.8, zorder=1)
     ax.text(57, 44, "1 · decode-bound", fontsize=6, color="#4c78a8", va="top")
-    ax.text(57, 92, "2 · prefill-bound", fontsize=6, color="#666666", va="top")
+    ax.text(1500, 54, "2 · prefill-bound", fontsize=6, color="#666666",
+            va="center", ha="center")
 
     # Regime 3 begins where the 3B model exhausts unified memory.
     ax.axvspan(MEMORY_WALL_TOKENS, 2600, color="#d62728", alpha=0.07, zorder=0)
     ax.axvline(MEMORY_WALL_TOKENS, color="#d62728", lw=0.9, ls="--", alpha=0.7, zorder=1)
-    ax.text(2560, 92, "3 · memory-bound", fontsize=6, color="#d62728",
-            va="top", ha="right")
+    ax.text(2560, 8, "3 · memory-bound", fontsize=6, color="#d62728",
+            va="bottom", ha="right")
 
     # The reversal is the finding — point straight at it.
     ax.annotate("prefill share reverses\nas decode collapses\n(49 $\\rightarrow$ 17 tok/s)",
-                xy=(2100, 68.8), xytext=(700, 26),
+                xy=(2060, 68.8), xytext=(760, 20),
                 fontsize=5.6, color="#d62728", ha="center",
                 arrowprops=dict(arrowstyle="->", color="#d62728", lw=0.8,
                                 connectionstyle="arc3,rad=-0.25"))

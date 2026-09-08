@@ -4,8 +4,9 @@
 %  Deadline: 9 Oct 2026 11:59pm AoE · <=6pp · sigconf 10pt · non-anonymous
 %  Build:  tectonic combined.tex     (or: latexmk -pdf combined.tex)
 %  TODO before submission:
-%    (1) Figure 1 — combined prefill-fraction curve for both platforms,
-%        generated from the two released datasets. Placeholder below.
+%    (1) DONE 2026-09-08 — Figure 1 built from the two released datasets via
+%        make_fig_combined.py (fig_combined.pdf). Regime labels 2 and 3 were
+%        colliding with the legend and the CPU curve; both repositioned.
 %    (2) Swap in HotMobile's official 10pt-amended acmart template if provided.
 %    (3) Add CCS concepts (required for camera-ready, optional at submission).
 % =====================================================================
@@ -127,7 +128,8 @@ not comfortably fit, which turns out to be the point. Every number traces to a r
 \begin{table}[t]
 \caption{The three regimes. The binding constraint changes, and with it the only lever that helps.}
 \label{tab:regimes}
-\small
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{@{}llll@{}}
 \toprule
 \textbf{Regime} & \textbf{Signature} & \textbf{Bound by} & \textbf{Lever} \\
