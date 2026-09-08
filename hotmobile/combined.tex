@@ -104,6 +104,17 @@ So the number of regimes a deployment traverses is not a property of the platfor
 \textbf{headroom between model footprint and memory capacity}---which makes it something a developer chooses at
 design time, usually without knowing they are choosing it.
 
+\paragraph{What has already been measured.} Two recent studies bracket this space, and neither answers
+the question above. Na et al.~\cite{na2024cpuinference} characterise LLM inference on \emph{datacentre} CPUs
+with matrix extensions and high-bandwidth memory, asking whether such machines can stand in for GPUs. Benazir and
+Lin~\cite{benazir2025applequant} profile \emph{high-end} Apple Silicon from a quantization perspective. Zhang and
+Huang~\cite{zhang2025cpuvsgpu} report that a mobile CPU can outperform the same device's GPU, but report
+throughput alone---without separating prefill from decode, or varying context. Zhao et
+al.~\cite{zhao2025sandwich} \emph{optimise} CPU serving through configuration search and hot-switching. Our
+question is orthogonal to all four: on the commodity, non-accelerated hardware an organisation already owns, how
+much of latency behaviour belongs to the machine and how much to the workload---and we characterise rather than
+optimise.
+
 \paragraph{Contributions.}
 \begin{itemize}
   \item We identify \textbf{three distinct latency regimes} for on-device inference and show a single device
@@ -197,11 +208,14 @@ stronger.
 surprises people: \emph{earlier} for larger models---$\sim$1{,}029 tokens at 0.5B against $\sim$329 at 3B.
 Bigger models reach the prefill-bound regime sooner and the memory-bound regime sooner.
 
-\paragraph{Quantization does not behave as the folklore says.} On Platform~A prefill \emph{speed} is
-non-monotonic in footprint: the 8-bit build prefills fastest and an intermediate K-quant slowest, inverting the
-``quantize down for speed'' heuristic~\cite{dettmers2022llmint8,frantar2023gptq,lin2024awq}. Smaller is not
-reliably faster. What smaller reliably buys is \emph{headroom}---and headroom is what keeps a deployment out of
-regime~3.
+\paragraph{Quantization does not behave as the folklore says---as others have also found.} Benazir and
+Lin~\cite{benazir2025applequant} report that lower bit-width does not reliably mean lower latency on Apple
+Silicon, and give the mechanism. We observe the same ordering on commodity CPU-only hardware: on Platform~A
+prefill \emph{speed} is non-monotonic in footprint, with the 8-bit build prefilling fastest and an intermediate
+K-quant slowest, inverting the ``quantize down for speed''
+heuristic~\cite{dettmers2022llmint8,frantar2023gptq,lin2024awq}. \textbf{We report this as corroboration on a
+different hardware class, not as a new result.} What smaller reliably buys is \emph{headroom}---and headroom is
+what keeps a deployment out of regime~3.
 
 \section{Why the Bottleneck Moves}
 \label{sec:why}
