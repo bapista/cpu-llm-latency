@@ -91,10 +91,10 @@ def main() -> int:
     ax.text(1500, 54, "2 · prefill-bound", fontsize=6, color="#666666",
             va="center", ha="center")
 
-    # Regime 3 begins where the 3B model exhausts unified memory.
+    # Regime 3 begins where the 3B model's decode collapses (cause not isolated).
     ax.axvspan(MEMORY_WALL_TOKENS, 2600, color="#d62728", alpha=0.07, zorder=0)
     ax.axvline(MEMORY_WALL_TOKENS, color="#d62728", lw=0.9, ls="--", alpha=0.7, zorder=1)
-    ax.text(2560, 8, "3 · memory-bound", fontsize=6, color="#d62728",
+    ax.text(2560, 8, "3 · collapse", fontsize=6, color="#d62728",
             va="bottom", ha="right")
 
     # The reversal is the finding — point straight at it.

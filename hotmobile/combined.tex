@@ -63,18 +63,16 @@ computer, and 8\,GB Apple Silicon---and find that \textbf{beyond $\sim$1{,}400 p
 end-to-end latency converges to within two percentage points across all non-accelerated devices}, despite absolute
 latency differing by up to 14$\times$ and model size by 4.7$\times$. At $\sim$1{,}400 prompt tokens every such
 device sits at 91--93\% prefill; by $\sim$2{,}440 tokens the three lie within 1.3 points of one another. A same-model control isolates the effect:
-identical weights, 14.4$\times$ apart in wall-clock, two points apart in share.
-The invariance breaks in exactly one circumstance. When weights plus KV cache exhaust memory, the device
-re-inverts to decode-bound and throughput collapses---49 to 17\,tok/s on 8\,GB Apple Silicon beyond
-$\sim$2{,}029 tokens. \textbf{How many regimes a deployment traverses is therefore set by memory headroom},
-a design-time property readable from specifications.
-Together these make on-device latency \textbf{predictable before execution}: the regime follows from the
-prompt, and the regime boundary follows from the hardware. We argue this is the missing precondition for
-regime-aware scheduling across heterogeneous owned devices, and that single-number throughput reporting
-conceals both properties. Harnesses and raw data are released.
+identical weights, 14.4$\times$ apart in prefill time, two points apart in share.
+The bottleneck then moves a second time. On 8\,GB Apple Silicon a 3B model \textbf{re-inverts to decode-bound}
+beyond $\sim$2{,}029 tokens as decode throughput collapses from 49 to 17\,tok/s, while smaller models on the same
+device never do. The collapse is measured; its cause is not yet isolated, and we state what our data rules out.
+Together these make the dominant phase \textbf{predictable before execution} from the prompt length alone,
+which we argue is the missing precondition for regime-aware scheduling across heterogeneous owned devices,
+and single-number throughput reporting conceals it. Harnesses and raw data are released.
 \end{abstract}
 
-\keywords{on-device inference, mobile systems, LLM, latency, prefill, memory wall, measurement}
+\keywords{on-device inference, mobile systems, LLM, latency, prefill, decode, measurement}
 
 \maketitle
 
@@ -88,23 +86,21 @@ travelled with them did not come from those devices. It came from GPU serving, w
 autoregressive \emph{decode} and where optimisation effort---batching, paged attention, speculative
 decoding---has been directed accordingly~\cite{kwon2023pagedattention,leviathan2023speculative}.
 
-We took that intuition to two on-device platforms and measured it. It does not merely fail. It fails
+We took that intuition to four on-device platforms and measured it. It does not merely fail. It fails
 \emph{differently at different context lengths on the same machine}.
 
 On an 8\,GB Apple Silicon device, a 3B model is \textbf{decode-bound} at short context---prefill accounts for
 only 20\% of end-to-end latency. As context grows it becomes \textbf{prefill-bound}, peaking at 80\% near
 1{,}500 tokens. Then, past roughly 2{,}029 tokens, it \textbf{re-inverts}: prefill's share falls back to
-$\sim$69\% while decode throughput collapses from 49 to 17\,tok/s, as weights plus a growing KV cache exhaust
-unified memory. Nothing changed but the length of the prompt.
+$\sim$69\% while decode throughput collapses from 49 to 17\,tok/s. Nothing changed but the length of the prompt.
 
 Smaller models on the same device never reach that third regime---0.5B and 1.5B climb monotonically and their
-decode throughput declines only gently, because their footprint leaves headroom. A CPU-only machine sits at the
-other extreme: across the whole sweep it never leaves the prefill-bound regime, climbing monotonically from 38\%
-to \textbf{95\%}.
+decode throughput declines only gently. A CPU-only machine sits at the other extreme: it crosses into the
+prefill-bound regime within $\sim$200 tokens and never leaves it, climbing to \textbf{95\%}.
 
-So the number of regimes a deployment traverses is not a property of the platform alone. It is set by the
-\textbf{headroom between model footprint and memory capacity}---which makes it something a developer chooses at
-design time, usually without knowing they are choosing it.
+So the number of regimes a deployment traverses is not a property of the platform alone: on one device it
+depends on which model the developer chose. Our hypothesis is that it is set by \textbf{memory headroom}, which
+would make it a design-time choice; Section~\ref{sec:why} states what our data does and does not support.
 
 \paragraph{What has already been measured.} Recent studies bracket this space; none answers the question above. Na et al.~\cite{na2024cpuinference} characterise LLM inference on \emph{datacentre} CPUs
 with matrix extensions and high-bandwidth memory, asking whether such machines can stand in for GPUs. Benazir and
@@ -121,8 +117,8 @@ optimise.
 \begin{itemize}
   \item We identify \textbf{three distinct latency regimes} for on-device inference and show a single device
         traversing all three as context grows (\S\ref{sec:three}).
-  \item We show which regimes a configuration reaches is governed by memory headroom, not platform class
-        (\S\ref{sec:three}), and give the mechanism for both transitions (\S\ref{sec:why}).
+  \item We show which regimes a configuration reaches is not fixed by platform class (\S\ref{sec:three}),
+        derive the cross-machine invariance and its limits, and bound the cause of the collapse (\S\ref{sec:why}).
   \item We draw out what follows for benchmarking, scheduling and context budgeting, and argue that
         single-number throughput reporting conceals every transition (\S\ref{sec:implications}).
   \item We release both harnesses and all raw data (\S\ref{sec:repro}).
@@ -131,16 +127,16 @@ optimise.
 \section{Three Regimes}
 \label{sec:three}
 
-\paragraph{Setup.} Both studies sweep prompt length from 55 to 2{,}336 tokens with five repetitions per point and a fixed 64-token generation budget,
-discard warm-up runs, and instrument prefill and decode separately end to end. Platform~A is a CPU-only machine
+\paragraph{Setup.} The Platform~A and~B studies sweep prompt length from 55 to 2{,}336 tokens with five
+repetitions per point, discard warm-up runs, and time prefill and decode separately. Output is capped at 64
+tokens: MLX generates all 64, while the Ollama runs stop at end-of-sequence, after 10--37 tokens on Platform~A. Platform~A is a CPU-only machine
 (AMD Ryzen~7 8845HS, 8 cores / 16 threads, 14\,GiB) running quantized Qwen2.5-7B, Llama-3.1-8B and Gemma2-9B
-through \texttt{llama.cpp}~\cite{gerganov2023llamacpp}. Platform~B is an 8\,GB MacBook Air running 4-bit MLX
+through Ollama's \texttt{llama.cpp} backend~\cite{gerganov2023llamacpp}. Platform~B is an 8\,GB MacBook Air running, on its GPU, 4-bit MLX
 builds of Qwen2.5-Instruct at 0.5B, 1.5B and 3B---a deliberate size sweep on a device where larger families do
-not comfortably fit, which turns out to be the point. To test whether the CPU-side behaviour is a property of
-one machine, we add two further non-accelerated devices: Platform~C, an Intel Core~i7-10700T (Comet Lake, 16
+not fit. To test whether the CPU-side behaviour is a property of
+one machine, we add two further CPU-only devices, swept at four prompt lengths from 121 to 2{,}439 tokens: Platform~C, an Intel Core~i7-10700T (Comet Lake, 16
 threads, 62.6\,GiB), and Platform~D, a Raspberry~Pi~5 (quad-core Arm Cortex-A76, 15.6\,GiB). Platforms~A
-and~C run Qwen2.5-7B; Platform~D runs Qwen2.5-1.5B, with a same-model 7B control reported below. Every number
-traces to a released raw-results file.
+and~C run Qwen2.5-7B; Platform~D runs Qwen2.5-1.5B, with a same-model 7B control reported below.
 
 \begin{table}[t]
 \caption{The three regimes. The binding constraint changes, and with it the only lever that helps.}
@@ -153,7 +149,7 @@ traces to a released raw-results file.
 \midrule
 1. Decode-bound  & prefill $<$50\%              & sequential cost & output length \\
 2. Prefill-bound & prefill rising, $>$50\%      & compute         & context length \\
-3. Memory-bound  & prefill \emph{falling},      & capacity        & KV growth \\
+3. Collapse      & prefill \emph{falling},      & unresolved      & model size \\
                  & decode collapsing            &                 &            \\
 \bottomrule
 \end{tabular}
@@ -161,7 +157,7 @@ traces to a released raw-results file.
 
 \begin{table}[t]
 \caption{One device, three regimes. Qwen2.5-3B (4-bit) on an 8\,GB Apple Silicon machine: prefill share rises,
-peaks, then \emph{reverses} as decode collapses past the memory wall. Means over five repetitions.}
+peaks, then \emph{reverses} as decode collapses. Means over five repetitions.}
 \label{tab:traversal}
 \small
 \begin{tabular}{@{}rrrl@{}}
@@ -175,8 +171,8 @@ peaks, then \emph{reverses} as decode collapses past the memory wall. Means over
   600 & 64.6 & 49.2 & 2 · prefill-bound \\
  1000 & 74.5 & 48.4 & 2 \\
  1500 & \textbf{79.9} & 43.5 & 2 · peak \\
- 2000 & 68.8 & \textbf{23.5} & $\rightarrow$ 3 · memory wall \\
- 2336 & 69.4 & \textbf{17.3} & 3 · memory-bound \\
+ 2000 & 68.8 & \textbf{23.5} & $\rightarrow$ 3 · collapse \\
+ 2336 & 69.4 & \textbf{17.3} & 3 · collapse \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -185,10 +181,10 @@ peaks, then \emph{reverses} as decode collapses past the memory wall. Means over
   \centering
   \includegraphics[width=\columnwidth]{fig_combined.pdf}
   \caption{Prefill's share of end-to-end latency against context length. The CPU
-  (black) climbs monotonically to 95\%: it never leaves regime~2. On Apple Silicon
+  (black) crosses into regime~2 early and never leaves it, reaching 95\%. On Apple Silicon
   the smaller models climb and level off, while \textbf{Qwen2.5-3B peaks near
   1{,}500 tokens and then reverses}---not because prefill became cheap, but because
-  decode collapsed past the memory wall. Means over five repetitions; one flagged
+  decode collapsed. Means over five repetitions; one flagged
   1.5B outlier excluded.}
   \label{fig:combined}
 \end{figure}
@@ -197,30 +193,29 @@ Table~\ref{tab:traversal} is the paper. A developer who profiles this configurat
 profiles it at 2{,}300 tokens will reach opposite conclusions about what to optimise, on identical hardware
 running an identical model.
 
-\paragraph{Headroom decides how far you travel.} On the same device, Qwen2.5-0.5B climbs monotonically from
+\paragraph{Model size decides how far you travel.} On the same device, Qwen2.5-0.5B climbs monotonically from
 13.7\% to 73.2\% prefill with decode declining only gently (250 to 208\,tok/s), and 1.5B behaves the same way
-(19.0\% to 79.9\%; 96 to 87\,tok/s).\footnote{One anomalous 1.5B point near 140 tokens is excluded, as in the
-underlying study.} Neither reaches regime~3, because neither exhausts unified memory. Only the 3B model---the
-one whose weights plus KV cache approach the 8\,GB ceiling---re-inverts.
+(19.0\% to 79.9\%; 96 to 87\,tok/s).\footnote{A 1.5B point near 140 tokens is excluded: it stopped after 13 of 64 tokens.} Neither reaches regime~3. Only the 3B model, the
+largest the device runs, re-inverts.
 
-\paragraph{Some platforms never leave regime 2.} Platform~A shows no reversal anywhere in the sweep. Prefill
-climbs monotonically---38\% at 55 tokens, 72\% at 367, 91\% at 1{,}299, \textbf{95\%} at 2{,}336---while decode
-sits flat at 11--12\,tok/s. With 14\,GiB and a 7B model there is ample headroom, so memory never binds; the
-machine simply lacks the parallelism to make prefill cheap. Llama-3.1-8B and Gemma2-9B reproduce this at
+\paragraph{Some platforms never leave regime 2.} Platform~A crosses into regime~2 just past 160 tokens and shows no
+reversal anywhere in the sweep. Prefill climbs monotonically---38\% at 55 tokens (an 11-token answer), 72\% at
+367, 91\% at 1{,}299, \textbf{95\%} at 2{,}336---while decode sits flat at 11--12\,tok/s. The machine simply
+lacks the parallelism to make prefill cheap. Llama-3.1-8B and Gemma2-9B reproduce this at
 95--96\% prefill.
 
 \paragraph{The crossover between regimes~1 and~2 also moves with model size,} and in the direction that
-surprises people: \emph{earlier} for larger models---$\sim$1{,}029 tokens at 0.5B against $\sim$329 at 3B.
-Bigger models reach the prefill-bound regime sooner and the memory-bound regime sooner.
+surprises people: \emph{earlier} for larger models---$\sim$830 tokens at 0.5B (interpolated) against
+$\sim$330 at 3B. Bigger models reach the prefill-bound regime sooner, and only the biggest reaches regime~3.
 
 \paragraph{Quantization does not behave as the folklore says---as others have also found.} Benazir and
 Lin~\cite{benazir2025applequant} report that lower bit-width does not reliably mean lower latency on Apple
-Silicon, and give the mechanism. We observe the same ordering on commodity CPU-only hardware: on Platform~A
-prefill \emph{speed} is non-monotonic in footprint, with the 8-bit build prefilling fastest and an intermediate
+Silicon, and give the mechanism. We observe the same ordering on commodity CPU-only hardware: on Platforms~A
+and~C prefill \emph{speed} is non-monotonic in footprint, with the 8-bit build prefilling fastest and an intermediate
 K-quant slowest, inverting the ``quantize down for speed''
 heuristic~\cite{dettmers2022llmint8,frantar2023gptq,lin2024awq}. \textbf{We report this as corroboration on a
-different hardware class, not as a new result.} What smaller reliably buys is \emph{headroom}---and headroom is
-what keeps a deployment out of regime~3.
+different hardware class, not as a new result.} What smaller reliably buys is \emph{headroom}, our leading
+candidate for what keeps a deployment out of regime~3.
 
 \paragraph{The share is the same across machines---once the context is long enough.}
 Table~\ref{tab:invariance} sweeps Platforms~A, C and~D together. Two instruction-set architectures and a
@@ -259,7 +254,8 @@ and the runtime version differs across the three (Ollama 0.19.0, 0.17.0 and 0.17
 this because the claim is a cross-machine one. Neither confound plausibly explains convergence \emph{towards} a
 common value as context grows---a version artefact would bias a machine roughly uniformly rather than vanish
 with prompt length---but a controlled re-run on a single runtime version would close the question, and we have
-not done it. No accelerator was measured on any platform.
+not done it. Platforms~A, C and~D are CPU-only; Platform~B uses the Apple GPU and is excluded from the
+invariance claim. The cross-machine sweep logged phase durations but not output token counts.
 
 \section{Why the Bottleneck Moves}
 \label{sec:why}
@@ -284,39 +280,50 @@ and $R_d \!\to\! kR_d$---then $\rho$ is unchanged and so is $\phi$. Two machines
 an order of magnitude therefore report the same share, which is precisely what
 Section~\ref{sec:three} measures: a $14\times$ spread in latency and a two-point spread in $\phi$.
 
+The same equation has a less flattering consequence: as $N_p/N_o$ grows, $\phi\to 1$ for \emph{every} $\rho$, so
+some convergence at long context is guaranteed by arithmetic alone. The informative quantity is therefore $\rho$
+itself. For the 7B model at 1{,}403 tokens the prefill-to-decode time ratio is 10.6 on Platform~A and 13.7 on~C:
+within 30\%, while prefill time differs 2.8$\times$. This assumes equal output length, which identical weights at
+temperature zero make likely but our logs do not record.
+
 Equation~\ref{eq:share} also says when the invariance \emph{must} fail: whenever $\rho$ is not constant
 across platforms. That gives two predictions, and the rest of this section is their two instances.
 
 \paragraph{Prediction 1: accelerators that parallelise prefill.} A GPU raises $R_p$ far more than $R_d$,
 since prefill is parallel across tokens while decode is sequential and bandwidth-bound. Larger $\rho$ means
 smaller $\phi$: the platform looks decode-bound. \emph{This is the datacentre intuition, and
-Equation~\ref{eq:share} reproduces it as a special case rather than a contradiction.} We measure no
-accelerated device here, so we claim invariance only across non-accelerated platforms.
+Equation~\ref{eq:share} reproduces it as a special case rather than a contradiction.} Platform~B's integrated
+GPU does not show it strongly at batch size one: its $\rho$ of 5--6 is close to Platform~A's 4.0--4.4. Because
+its runs also generate a full 64 tokens, we claim invariance only across the CPU-only platforms.
 
 \paragraph{Prediction 2: collapse of $R_d$.} If decode throughput falls sharply while prefill is unaffected,
 $\rho$ rises and $\phi$ turns back down---not because prefill got cheaper, but because decode got worse.
 The regime~2~$\rightarrow$~3 transition below is exactly this.
 
-Two transitions, two mechanisms.
+Two transitions follow; we can explain the first.
 
 \paragraph{Regime 1 $\rightarrow$ 2.} Prefill is a single pass over the context and is parallel across tokens;
 it is compute-bound. Decode is sequential---each token depends on the last---and is bound by memory bandwidth,
 streaming weights and a growing KV cache at every
 step~\cite{kwon2023pagedattention,agrawal2024sarathi}. Prefill cost therefore scales with context while decode
 cost per token does not, so prefill eventually overtakes. On hardware that parallelises prefill well this takes
-a long prompt; on a CPU it happens almost immediately, which is why Platform~A appears to start in regime~2.
+a long prompt; on a CPU it happens almost immediately, which is why Platform~A crosses within $\sim$160 tokens.
 The datacentre disaggregation literature separates the two phases for exactly this
 reason~\cite{patel2024splitwise,zhong2024distserve}; on-device there is nowhere to disaggregate to.
 
-\paragraph{Regime 2 $\rightarrow$ 3.} Unified memory holds weights and KV cache in one pool. As context grows
-the cache grows with it, and once the combined footprint approaches capacity, decode does not taper---it falls
-off a cliff, 49 to 17\,tok/s in our measurements. Because prefill's share is a \emph{ratio}, decode getting
-dramatically slower makes prefill look smaller: the curve turns back down. The reversal is not prefill becoming
-cheap. It is decode becoming catastrophic. Work on streaming weights from flash addresses a neighbouring
-constraint~\cite{alizadeh2024llmflash}, but what we observe is a discontinuity on a device a user is holding.
+\paragraph{Regime 2 $\rightarrow$ 3.} Past $\sim$1{,}500 tokens the 3B model's decode throughput falls from 43
+to 17\,tok/s while its prefill throughput falls only 16\%. Because prefill's share is a \emph{ratio}, decode
+getting slower makes prefill look smaller and the curve turns back down: Prediction~2. The reversal is not
+prefill becoming cheap. It is decode collapsing. \textbf{What collapses it we have not isolated}, and our data
+rules out the obvious answer: MLX's own peak allocation is 2.44\,GB of the 8\,GB and stays flat across the
+collapse, and the 3B model's KV cache at 2{,}336 tokens is under 100\,MB, so the model's footprint alone does
+not exhaust memory. Two candidates remain. One is system-wide memory pressure on an 8\,GB machine that also
+runs an operating system. The other is thermal limits on a fanless chassis: our runs went in ascending prompt
+length, so the longest prompts were also the latest. Only the largest model collapses, which fits both.
+Separating them needs a randomised-order rerun with swap and thermal telemetry.
 
 This is why the three are regimes rather than points on a curve. In regime~1 the lever is output length; in
-regime~2 it is context length; in regime~3 neither helps and the only remedy is to reduce footprint. An
+regime~2 it is context length; in regime~3 neither helps, and on our data only a smaller model avoids it. An
 optimisation that works in one is neutral or harmful in another.
 
 \section{What This Means for Mobile Systems}
@@ -340,18 +347,18 @@ length~\cite{chen2023frugalgpt,ong2024routellm,schuster2022calm}. That is right 
 and dangerously wrong in regime~3, where the true cost is that the request has pushed the device past a cliff
 it will not recover from until the context shrinks.
 
-\paragraph{4. The memory wall is a design-time constraint.}
+\paragraph{4. The collapse is a design-time constraint.}
 Because it is a discontinuity rather than a slope, on-device capability is not gracefully degradable. An
 assistant that behaves well carrying 1{,}800 tokens of history may be unusable at 2{,}200 on the same phone.
 That determines how much conversation history a product can keep---an architecture decision, not a tuning flag.
-And since headroom is what governs it, choosing a smaller model is often better understood as buying regime
+And since only the largest model collapsed, choosing a smaller model may be better understood as buying regime
 avoidance than as buying speed.
 
 \paragraph{5. Context budgeting is the largest available lever in regime 2.}
 If latency is governed by what the model reads, then what it reads is the thing to control. We demonstrated
 this on Platform~A: gating the costliest optional stage of an agent pipeline---a second ``review/verify'' model
 pass---cut end-to-end latency \textbf{2.4$\times$} with no measurable quality loss under an order-swapped LLM
-judge~\cite{zheng2023judging}. It is the largest single lever on that platform, and it is invisible to anyone
+judge~\cite{zheng2023judging} ($n=8$: seven ties, one win for the second pass). It is the largest single lever on that platform, and it is invisible to anyone
 optimising decode.
 
 \section{Open Questions}
@@ -360,13 +367,13 @@ optimising decode.
 \paragraph{Can a runtime detect which regime it is in, and adapt?} The three-regime picture makes this
 tractable. The signals are cheap and
 already available at inference time---prefill fraction, decode throughput, memory headroom---and each regime has
-a known corresponding action: shorten output in regime~1, budget context in regime~2, cap KV growth or swap to
+a known corresponding action: shorten output in regime~1, budget context in regime~2, move to
 a smaller model in regime~3. This is not phase hot-switching~\cite{zhao2025sandwich}: the phase is known when
 a request arrives, whereas the regime depends on context length and headroom and can change mid-session. A runtime that classified its own regime and switched policy would need no
 platform-specific tuning from the developer. Whether such a controller is stable near the boundaries, and
 whether the regime-3 transition can be predicted rather than merely detected after the collapse, we do not know.
 
-\paragraph{Is there a fourth regime?} Neither platform includes a dedicated neural accelerator. An NPU may add
+\paragraph{Is there a fourth regime?} None of our platforms uses a dedicated neural accelerator. An NPU may add
 one, or may sit inside an existing regime. If regimes keep accumulating, the argument for measuring rather than
 assuming strengthens.
 
@@ -375,19 +382,19 @@ resident during decode; speculative decoding attacks the sequential dependency t
 slow~\cite{leviathan2023speculative}. Both act directly on the mechanisms above. Whether they collapse regimes
 together or separate them further is empirical, and we have not answered it.
 
-\paragraph{Limitations.} Each platform is a single machine, with a second CPU vendor as the only cross-device
-check. We measure three model sizes on Platform~B and three families on Platform~A, at one primary quantization
+\paragraph{Limitations.} Each platform is a single machine; three CPUs across two instruction sets are the
+cross-device check. We measure three model sizes on Platform~B and three families on Platform~A, at one primary quantization
 level each. Absolute figures are characteristic of these devices. The claim we defend is the \emph{structure}:
-three regimes, two transitions, governed by memory headroom---and that survives across models and across two
-CPU vendors.
+three regimes and two transitions, measured. That memory headroom governs the second is a hypothesis we
+have not yet isolated.
 
 \section{Conclusion}
 
 On-device LLM latency has no single characterisation, and not merely because devices differ. The bottleneck
-moves \emph{within} a device: decode-bound at short context, prefill-bound through the middle, and memory-bound
-once weights plus KV cache stop fitting---at which point prefill's share falls not because prefill got cheap but
-because decode collapsed. Whether a deployment sees one regime, two or three is decided by the headroom a
-developer leaves, usually without realising it is a decision. Any system that schedules, places or budgets
+moves \emph{within} a device: decode-bound at short context, prefill-bound through the middle, and, for the largest model on an 8\,GB device,
+decode-collapsed past $\sim$2{,}000 tokens---at which point prefill's share falls not because prefill got cheap but
+because decode collapsed. Whether a deployment sees two regimes or three depends on the model a developer
+chooses; whether memory headroom is the reason is the next measurement. Any system that schedules, places or budgets
 on-device inference---and any benchmark that reports its speed---should measure the hardware and the context
 length together, rather than inherit an intuition from a datacentre it will never run in.
 
