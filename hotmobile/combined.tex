@@ -3,12 +3,6 @@
 %  Drafted 2026-08-06. Separate from main.tex (the Paper-1-only port).
 %  Deadline: 9 Oct 2026 11:59pm AoE · <=6pp · sigconf 10pt · non-anonymous
 %  Build:  tectonic combined.tex     (or: latexmk -pdf combined.tex)
-%  TODO before submission:
-%    (1) DONE 2026-09-08 — Figure 1 built from the two released datasets via
-%        make_fig_combined.py (fig_combined.pdf). Regime labels 2 and 3 were
-%        colliding with the legend and the CPU curve; both repositioned.
-%    (2) Swap in HotMobile's official 10pt-amended acmart template if provided.
-%    (3) Add CCS concepts (required for camera-ready, optional at submission).
 % =====================================================================
 \documentclass[sigconf,nonacm,10pt]{acmart}
 
@@ -34,23 +28,6 @@ On-Device LLM Latency}
 \email{bapistakhan@gmail.com}
 \renewcommand{\shortauthors}{Bapista Khan}
 
-% ==========================================================================
-% ABSTRACT REPOSITIONED 2026-08-13 around the cross-hardware invariance result.
-% Rationale and related-work analysis: see REPOSITION.md in this directory.
-%
-% BODY NOW SUPPORTS THE ABSTRACT (8 Sep 2026). Closed:
-%   [x] ARM arm added as Platform D (Raspberry Pi 5, Cortex-A76) + Platform C (Comet Lake)
-%   [x] Cross-machine invariance table added (Table 3)
-%   [x] Same-model control added -- 7B Q4_K_M @1,402 tok on all three:
-%       30.08 s / 83.54 s / 431.72 s = 14.4x, shares 92/93/94%
-%   [x] Reps: data files record reps=5 already; the "currently 3" note was stale
-%   [x] Related work: all four papers cited; quantisation reframed as corroboration
-%   [x] No GPU measured -- stated in Threats to Validity and in section 3.1
-%  REMAINING:
-%   [ ] Read all four prior-art papers IN FULL (characterisations rest on abstracts)
-%   [ ] Verify the HotMobile 2027 CFP: page limit, whether refs count, format
-%   [ ] Optional: re-run Platform C on a matched Ollama version (see Threats)
-% ==========================================================================
 \begin{abstract}
 On-device language models are deployed for privacy, offline operation and cost, yet the latency intuition the
 community carries is inherited from datacentre GPU serving, where autoregressive \emph{decode} dominates. Prior
