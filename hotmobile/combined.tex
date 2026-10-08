@@ -44,9 +44,11 @@ identical weights, 14.4$\times$ apart in prefill time, two points apart in share
 The bottleneck then moves a second time. On 8\,GB Apple Silicon a 3B model \textbf{re-inverts to decode-bound}
 beyond $\sim$2{,}029 tokens as decode throughput collapses from 49 to 17\,tok/s, while smaller models on the same
 device never do. The collapse is measured; its cause is not yet isolated, and we state what our data rules out.
-Together these make the dominant phase \textbf{predictable before execution} from the prompt length alone,
-which we argue is the missing precondition for regime-aware scheduling across heterogeneous owned devices,
-and single-number throughput reporting conceals it. Harnesses and raw data are released.
+The share is also \textbf{predictable}: one calibration of the prefill-to-decode rate ratio predicts it to
+within 2.6 points from $\sim$330 prompt tokens upward, until decode collapses---and then the prediction fails by
+17 points, so a runtime can \textbf{detect the collapse from its own timings}. We argue this is the missing
+precondition for regime-aware scheduling across heterogeneous owned devices, and that single-number
+throughput reporting conceals it. Harnesses and raw data are released.
 \end{abstract}
 
 \keywords{on-device inference, mobile systems, LLM, latency, prefill, decode, measurement}
@@ -96,6 +98,8 @@ optimise.
         traversing all three as context grows (\S\ref{sec:three}).
   \item We show which regimes a configuration reaches is not fixed by platform class (\S\ref{sec:three}),
         derive the cross-machine invariance and its limits, and bound the cause of the collapse (\S\ref{sec:why}).
+  \item We show that one calibration measurement predicts the prefill share within 2.6 points, and that the
+        prediction's failure detects the collapse (\S\ref{sec:predict}).
   \item We draw out what follows for benchmarking, scheduling and context budgeting, and argue that
         single-number throughput reporting conceals every transition (\S\ref{sec:implications}).
   \item We release both harnesses and all raw data (\S\ref{sec:repro}).
@@ -303,6 +307,38 @@ This is why the three are regimes rather than points on a curve. In regime~1 the
 regime~2 it is context length; in regime~3 neither helps, and on our data only a smaller model avoids it. An
 optimisation that works in one is neutral or harmful in another.
 
+\subsection{One measurement predicts the share; its failure flags the collapse}
+\label{sec:predict}
+
+Equation~\ref{eq:share} is a definition, but it becomes a prediction if $\rho$ is stable. We calibrate $\rho$
+once per configuration, at $\sim$650 tokens, and predict $\phi$ at every other measured length from that $\rho$
+and the point's own token counts (Table~\ref{tab:predict}). From $\sim$330 tokens until decode collapses, the error
+never exceeds 2.6 points across 16 predictions on two platforms (mean 1.0). Below $\sim$300 tokens it degrades---up to 15 points on
+Platform~A at 55 tokens---where fixed per-request costs distort both rates.
+
+On the 3B model the prediction fails by \textbf{17 points} at 2{,}029 and 2{,}365 tokens, six times its worst error
+elsewhere above 300 tokens. That failure is useful: a runtime that calibrates $\rho$ once and watches the residual between
+predicted and observed share \emph{detects the collapse from its own timings}, without a model of its cause.
+Predictions use each point's realised output length. Platforms~C and~D did not log it and are omitted.
+
+\begin{table}[t]
+\caption{Equation~\ref{eq:share} as a predictor. $\rho$ calibrated once per configuration; error in points of
+prefill share at the other measured lengths.}
+\label{tab:predict}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrcc@{}}
+\toprule
+\textbf{Configuration} & $\rho$ & \textbf{max $|$err$|$, 330--1{,}530} & \textbf{err $\geq$2{,}000 tok} \\
+\midrule
+A · CPU · 7B      &  4.14 & 1.1 & $-0.1$ \\
+B · GPU · 0.5B    & 12.42 & 2.6 & $+1.6$, $+1.6$ \\
+B · GPU · 1.5B    &  8.99 & 2.2 & $+1.0$, $+0.6$ \\
+B · GPU · 3B      &  5.40 & 1.8 & $\mathbf{+16.6}$, $\mathbf{+17.9}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{What This Means for Mobile Systems}
 \label{sec:implications}
 
@@ -347,8 +383,9 @@ already available at inference time---prefill fraction, decode throughput, memor
 a known corresponding action: shorten output in regime~1, budget context in regime~2, move to
 a smaller model in regime~3. This is not phase hot-switching~\cite{zhao2025sandwich}: the phase is known when
 a request arrives, whereas the regime depends on context length and headroom and can change mid-session. A runtime that classified its own regime and switched policy would need no
-platform-specific tuning from the developer. Whether such a controller is stable near the boundaries, and
-whether the regime-3 transition can be predicted rather than merely detected after the collapse, we do not know.
+platform-specific tuning from the developer. Section~\ref{sec:predict} supplies the detector: the residual of
+Equation~\ref{eq:share}. Whether such a controller is stable near the boundaries, and whether the regime-3
+transition can be predicted rather than merely detected after the collapse, we do not know.
 
 \paragraph{Is there a fourth regime?} None of our platforms uses a dedicated neural accelerator. An NPU may add
 one, or may sit inside an existing regime. If regimes keep accumulating, the argument for measuring rather than
@@ -373,7 +410,8 @@ decode-collapsed past $\sim$2{,}000 tokens---at which point prefill's share fall
 because decode collapsed. Whether a deployment sees two regimes or three depends on the model a developer
 chooses; whether memory headroom is the reason is the next measurement. Any system that schedules, places or budgets
 on-device inference---and any benchmark that reports its speed---should measure the hardware and the context
-length together, rather than inherit an intuition from a datacentre it will never run in.
+length together, rather than inherit an intuition from a datacentre it will never run in. It need not measure
+much: one calibration of $\rho$ predicts the share, and the prediction's failure announces the collapse.
 
 \section*{Reproducibility}
 \label{sec:repro}
