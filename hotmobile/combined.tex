@@ -106,14 +106,14 @@ So the number of regimes a deployment traverses is not a property of the platfor
 \textbf{headroom between model footprint and memory capacity}---which makes it something a developer chooses at
 design time, usually without knowing they are choosing it.
 
-\paragraph{What has already been measured.} Two recent studies bracket this space, and neither answers
-the question above. Na et al.~\cite{na2024cpuinference} characterise LLM inference on \emph{datacentre} CPUs
+\paragraph{What has already been measured.} Recent studies bracket this space; none answers the question above. Na et al.~\cite{na2024cpuinference} characterise LLM inference on \emph{datacentre} CPUs
 with matrix extensions and high-bandwidth memory, asking whether such machines can stand in for GPUs. Benazir and
 Lin~\cite{benazir2025applequant} profile \emph{high-end} Apple Silicon from a quantization perspective. Zhang and
 Huang~\cite{zhang2025cpuvsgpu} report that a mobile CPU can outperform the same device's GPU, but report
 throughput alone---without separating prefill from decode, or varying context. Zhao et
-al.~\cite{zhao2025sandwich} \emph{optimise} CPU serving through configuration search and hot-switching. Our
-question is orthogonal to all four: on the commodity, non-accelerated hardware an organisation already owns, how
+al.~\cite{zhao2025sandwich} \emph{optimise} CPU serving through configuration search and hot-switching. Hydra~\cite{taherin2026hydra}
+separates the phases on GPU-accelerated Jetson SoCs, where a 500-token output budget makes decode dominate, and
+names longer contexts and memory-capacity pressure as future work. Our question is orthogonal to all five: on the commodity, non-accelerated hardware an organisation already owns, how
 much of latency behaviour belongs to the machine and how much to the workload---and we characterise rather than
 optimise.
 
@@ -131,7 +131,7 @@ optimise.
 \section{Three Regimes}
 \label{sec:three}
 
-\paragraph{Setup.} Both studies sweep prompt length from 55 to 2{,}336 tokens with five repetitions per point,
+\paragraph{Setup.} Both studies sweep prompt length from 55 to 2{,}336 tokens with five repetitions per point and a fixed 64-token generation budget,
 discard warm-up runs, and instrument prefill and decode separately end to end. Platform~A is a CPU-only machine
 (AMD Ryzen~7 8845HS, 8 cores / 16 threads, 14\,GiB) running quantized Qwen2.5-7B, Llama-3.1-8B and Gemma2-9B
 through \texttt{llama.cpp}~\cite{gerganov2023llamacpp}. Platform~B is an 8\,GB MacBook Air running 4-bit MLX
@@ -357,11 +357,12 @@ optimising decode.
 \section{Open Questions}
 \label{sec:open}
 
-\paragraph{Can a runtime detect which regime it is in, and adapt?} This is the question we find most
-interesting, and the three-regime picture sharpens it into something tractable. The signals are cheap and
+\paragraph{Can a runtime detect which regime it is in, and adapt?} The three-regime picture makes this
+tractable. The signals are cheap and
 already available at inference time---prefill fraction, decode throughput, memory headroom---and each regime has
 a known corresponding action: shorten output in regime~1, budget context in regime~2, cap KV growth or swap to
-a smaller model in regime~3. A runtime that classified its own regime and switched policy would need no
+a smaller model in regime~3. This is not phase hot-switching~\cite{zhao2025sandwich}: the phase is known when
+a request arrives, whereas the regime depends on context length and headroom and can change mid-session. A runtime that classified its own regime and switched policy would need no
 platform-specific tuning from the developer. Whether such a controller is stable near the boundaries, and
 whether the regime-3 transition can be predicted rather than merely detected after the collapse, we do not know.
 
